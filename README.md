@@ -4,7 +4,7 @@ This is a Multi-Level Marketing (MLM) web application built using Laravel Blade 
 
 🚀 Features
 
-Clean Laravel Blade templating
+Clean Laravel Blade templating with htmlboilerplate
 
 Vite for fast asset building
 
