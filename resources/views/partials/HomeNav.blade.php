@@ -1,9 +1,14 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
   <div class="container-fluid">
-    <!-- Brand / Logo -->
+<!-- Brand / Logo -->
+    <img  src="{{ asset('assets/banner.jpg') }}" alt="Logo" style="height:40px; border-radius:50%">
+
     <a class="navbar-brand fw-bold text-uppercase" href="#">
-      <i class="bi bi-diagram-3"></i> MLM System
+      <div>
+        <i class="bi bi-diagram-3"></i> Aken
+      </div>
     </a>
+
 
     <!-- Toggler -->
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
