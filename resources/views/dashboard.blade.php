@@ -355,7 +355,7 @@
                             <img src="../assets/img/small-logos/logo-spotify.svg" class="avatar avatar-sm me-3" alt="spotify">
                           </div>
                           <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Silver Level/h6>
+                            <h6 class="mb-0 text-sm">Silver Level</h6>
                           </div>
                         </div>
                       </td>
