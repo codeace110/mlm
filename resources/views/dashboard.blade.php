@@ -183,7 +183,7 @@
             <div class="card-footer pt-0 p-3 d-flex align-items-center">
               <div class="w-60">
                 <p class="text-sm">
-                  More than <b>1,500,000</b> developers used Creative Tim's products and over <b>700,000</b> projects were created.
+                  More than 1500 product sales in just 1 month
                 </p>
               </div>
               <div class="w-40 text-end">
