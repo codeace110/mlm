@@ -26,6 +26,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/table', function () {
         return view('dashboardtable');
     })->name('dashboard.table');
+
+
+        Route::get('/dashboard/billing', function () {
+        return view('dashboardbilling');
+    })->name('dashboard.billing');
 });
 
 
