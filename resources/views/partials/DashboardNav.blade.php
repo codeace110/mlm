@@ -93,7 +93,7 @@
 
       <!-- Notifications -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->is('notifications*') ? 'active' : '' }}" href="{{ url('notifications') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.notification*') ? 'active' : '' }}" href="{{ Route('dashboard.notification') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- Settings Icon -->
             <svg width="12px" height="12px" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
@@ -135,29 +135,24 @@
           <span class="nav-link-text ms-1">Profile</span>
         </a>
       </li>
-
       <!-- Logout -->
       <li class="nav-item">
         <form action="{{ route('logout') }}" method="POST">
           @csrf
           <button type="submit" class="nav-link btn btn-link text-start w-100">
             <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-              <!-- Document Icon -->
-              <svg width="12px" height="12px" viewBox="0 0 40 44" xmlns="http://www.w3.org/2000/svg">
-                <title>document</title>
-                <g fill="#FFFFFF" fill-rule="nonzero">
-                  <path class="color-background opacity-6" d="M40,40H36.4V3.6H5.5V0H38.2C39.2,0 40,0.8 40,1.8V40Z"/>
-                  <path class="color-background"
-                        d="M30.9,7.3H1.8C0.8,7.3 0,8.1 0,9.1V41.8C0,42.8 0.8,43.6 1.8,43.6H30.9C31.9,43.6 32.7,42.8 32.7,41.8V9.1
-                           C32.7,8.1 31.9,7.3 30.9,7.3Z"/>
-                </g>
+              <!-- Logout Icon SVG -->
+              <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <title>Logout</title>
+                <path d="M16 17L21 12L16 7" stroke="#000000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 12H9" stroke="#000000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 5H5C4.44772 5 4 5.44772 4 6V18C4 18.5523 4.44772 19 5 19H12" stroke="#000000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <span class="nav-link-text ms-1">Log out</span>
           </button>
         </form>
       </li>
-
     </ul>
   </div>
 </aside>
@@ -167,12 +162,46 @@
     <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" navbar-scroll="true">
       <div class="container-fluid py-1 px-3">
         <nav aria-label="breadcrumb">
-          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-            <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
-          </ol>
-          <h6 class="font-weight-bolder mb-0">Dashboard</h6>
+            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                <li class="breadcrumb-item text-sm">
+                    <a class="opacity-5 text-dark" href="javascript:;">Pages</a>
+                </li>
+                @if(request()->routeIs('dashboard'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
+                @elseif(request()->routeIs('dashboard.table'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Tables</li>
+                @elseif(request()->routeIs('dashboard.billing'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Bonus Details</li>
+                @elseif(request()->routeIs('dashboard.network*'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Network</li>
+                @elseif(request()->routeIs('dashboard.notification*'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Notifications</li>
+                @elseif(request()->routeIs('dashboard.profile'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Profile</li>
+                @else
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Unknown</li>
+                @endif
+            </ol>
+
+            <h6 class="font-weight-bolder mb-0">
+                @if(request()->routeIs('dashboard'))
+                    Dashboard
+                @elseif(request()->routeIs('dashboard.table'))
+                    Tables
+                @elseif(request()->routeIs('dashboard.billing'))
+                    Bonus Details
+                @elseif(request()->routeIs('dashboard.network*'))
+                    Network
+                @elseif(request()->routeIs('dashboard.notification*'))
+                    Notifications
+                @elseif(request()->routeIs('dashboard.profile'))
+                    Profile
+                @else
+                    Page
+                @endif
+            </h6>
         </nav>
+
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
           <div class="ms-md-auto pe-md-3 d-flex align-items-center">
             <div class="input-group">
@@ -187,7 +216,12 @@
             <li class="nav-item d-flex align-items-center">
               <a href="javascript:;" class="nav-link text-body font-weight-bold px-0">
                 <i class="fa fa-user me-sm-1"></i>
-                <span class="d-sm-inline d-none">Sign In</span>
+                <form action="{{ route('logout') }}" method="POST">
+                   @csrf
+                  <button type="submit" class="nav-link btn btn-link text-start w-100"> 
+                  <span class="nav-link-text ms-1">Log out</span>
+                  </button>
+               </form>
               </a>
             </li>
             <li class="nav-item d-xl-none ps-3 d-flex align-items-center">

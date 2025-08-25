@@ -41,6 +41,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboardnetwork');
     })->name('dashboard.network');
 
+          Route::get('/dashboard/notification', function () {
+        return view('dashboardnotification');
+    })->name('dashboard.notification');
+
 
 
 
