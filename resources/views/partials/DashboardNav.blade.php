@@ -35,6 +35,20 @@
         </a>
       </li>
 
+          <!-- Product Packages -->
+      <li class="nav-item">
+      <a class="nav-link {{ request()->routeIs('dashboard.package*') ? 'active' : '' }}" href="{{ Route('dashboard.package') }}">
+        <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+          <!-- Shopping Bag Icon -->
+          <svg width="12px" height="12px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000ff">
+            <title>shopping-bag</title>
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6zm0 2h12l1.5 2H4.5L6 4zm0 4h12v12H6V8z"/>
+          </svg>
+        </div>
+        <span class="nav-link-text ms-1">Product Packages</span>
+      </a>
+      </li>
+
       <!-- Tables -->
       <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('dashboard.table') ? 'active' : '' }}" href="{{ route('dashboard.table') }}">
@@ -211,7 +225,7 @@
           </div>
           <ul class="navbar-nav  justify-content-end">
             <li class="nav-item d-flex align-items-center">
-              <a class="btn btn-outline-primary btn-sm mb-0 me-3" target="_blank" href="https://www.creative-tim.com/builder?ref=navbar-soft-ui-dashboard">Online Builder</a>
+              <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('dashboard.package') }}" >Browse Package</a>
             </li>
             <li class="nav-item d-flex align-items-center">
               <a href="javascript:;" class="nav-link text-body font-weight-bold px-0">

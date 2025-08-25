@@ -46,9 +46,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard.notification');
 
 
+    Route::get('/dashboard/package', function () {
+        return view('dashboardpackage');
+    })->name('dashboard.package');
 
 
 });
+
+
+
+
+
 
 
 
