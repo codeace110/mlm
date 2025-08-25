@@ -31,6 +31,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard/billing', function () {
         return view('dashboardbilling');
     })->name('dashboard.billing');
+    
+    Route::get('/dashboard/profile', function () {
+        return view('dashboardprofile');
+    })->name('dashboard.profile');
+
+
+       Route::get('/dashboard/network', function () {
+        return view('dashboardnetwork');
+    })->name('dashboard.network');
+
+
+
+
 });
 
 
