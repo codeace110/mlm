@@ -23883,7 +23883,7 @@ html {
 .navbar-vertical.navbar-expand-xs .navbar-collapse {
   display: block;
   overflow: auto;
-  height: calc(100vh - 360px);
+  height: calc(100vh);
 }
 
 .navbar-vertical.navbar-expand-xs>[class*=container] {
@@ -23912,7 +23912,7 @@ html {
 
 .navbar-vertical.navbar-expand-xs .navbar-nav .nav-link {
   padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding-bottom: 1.5rem;
   margin: 0 1rem;
 }
 

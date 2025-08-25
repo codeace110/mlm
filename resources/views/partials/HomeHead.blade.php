@@ -19,14 +19,12 @@
     rel="stylesheet" 
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" 
     crossorigin="anonymous">
+   <!-- Bootstrap -->
+  
 
   <!-- Favicon -->
-  <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
+  <link rel="icon" href="{{ ('logo.ico') }}" type="image/x-icon">
   <link rel="apple-touch-icon" href="{{ asset('logo.png') }}">
   <link rel="manifest" href="{{ asset('site.webmanifest') }}">
   <meta name="theme-color" content="#fafafa">
-
-  {{-- Styles --}}
-  @vite(['resources/css/nav.css', 'resources/css/footer.css'])
-  @stack('styles')
 </head>
