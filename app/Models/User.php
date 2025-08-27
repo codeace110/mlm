@@ -41,4 +41,18 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+        protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = 'AKEN' . strtoupper(substr(bin2hex(random_bytes(11)), 0, 11));
+            }
+        });
+    }
 }
+
+
+
