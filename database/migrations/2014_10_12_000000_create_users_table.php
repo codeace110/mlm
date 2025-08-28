@@ -11,28 +11,31 @@ return new class extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->string('id', 20)->primary();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('referral_code', 32)->unique()->after('id');
+            $table->foreignId('sponsor_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('placement_side', 5)->nullable(); // 'left' or 'right'
+            
+            // enforce only one left & one right per sponsor
+            $table->unique(['sponsor_id','placement_side'], 'unique_sponsor_side');
         });
     }
-
-    
 
     /**
      * Reverse the migrations.
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::table('users', function (Blueprint $table) {
+            // drop unique index by name
+            $table->dropUnique('unique_sponsor_side');
+
+            // drop columns
+            $table->dropColumn(['referral_code', 'sponsor_id', 'placement_side']);
+        });
     }
 };

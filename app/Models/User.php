@@ -33,6 +33,17 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function referral()
+    {
+    return $this->hasOne(Referral::class);
+    }
+
+    public function referralUsed()
+    {
+    return $this->hasOne(Referral::class, 'used_by');
+    }
+
+
     /**
      * The attributes that should be cast.
      *
