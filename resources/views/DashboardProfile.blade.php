@@ -1,23 +1,54 @@
-@extends('layouts.dashboard') {{-- or your main layout --}}
+@extends('layouts.dashboard')
 
 @section('content')
 <div class="container-fluid py-4">
   <div class="row">
-    <!-- Profile Card (User Info) -->
+    <!-- Profile Card (User Info + Referral Code) -->
     <div class="col-xl-4 col-lg-5 col-md-6 mb-4">
       <div class="card card-profile shadow-xl border-radius-xl">
         <div class="card-body text-center">
+          <!-- Profile Image -->
           <img src="{{ asset('assets/img/team-2.jpg') }}" alt="Profile picture"
                class="rounded-circle shadow border border-2 border-white mb-3"
                width="120" height="120">
 
+          <!-- User Info -->
           <h5 class="mb-1">{{ auth()->user()->name ?? 'John Doe' }}</h5>
           <p class="text-sm text-muted mb-2">
             {{ auth()->user()->email ?? 'example@email.com' }}
           </p>
-          <a href="{{ route('profile.edit') }}" class="btn btn-sm bg-gradient-primary mb-0">
+
+          <!-- Edit Profile Button -->
+          <a href="{{ route('profile.edit') }}" class="btn btn-sm bg-gradient-primary mb-3">
             Edit Profile
           </a>
+
+          <!-- Referral Code Section -->
+          @if(auth()->user()->referral_code)
+            <div class="card bg-light border-0 shadow-sm p-3 rounded-3">
+              <h6 class="text-muted">Your Referral Code</h6>
+              <div class="d-flex justify-content-center align-items-center">
+                <input type="text" 
+                       id="referralCode" 
+                       class="form-control text-center fw-bold border-0 bg-transparent"
+                       style="max-width: 180px;" 
+                       value="{{ auth()->user()->referral_code }}" 
+                       readonly>
+                <button class="btn btn-sm btn-outline-primary ms-2" onclick="copyReferral()">
+                  Copy
+                </button>
+              </div>
+            </div>
+          @else
+            <!-- If no referral code -->
+            <div class="card bg-light border-0 shadow-sm p-3 rounded-3">
+              <h6 class="text-muted">No Referral Code Yet</h6>
+              <a href="{{ route('dashboard.package') }}" class="btn btn-sm bg-gradient-success mt-2">
+                Get a Product Package
+              </a>
+            </div>
+          @endif
+
         </div>
       </div>
     </div>
@@ -67,4 +98,15 @@
 
   </div>
 </div>
+
+<!-- Copy Script -->
+<script>
+  function copyReferral() {
+    let copyText = document.getElementById("referralCode");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); // for mobile
+    navigator.clipboard.writeText(copyText.value);
+    alert("Referral code copied: " + copyText.value);
+  }
+</script>
 @endsection

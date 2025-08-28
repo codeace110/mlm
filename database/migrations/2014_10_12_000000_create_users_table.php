@@ -18,8 +18,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-
-            $table->string('referral_code', 32)->unique(); // code they share
+            $table->string('referral_code')->nullable();
             $table->string('sponsor_id', 20)->nullable();  // assigned only when approved
             $table->string('placement_side', 5)->nullable();
 
