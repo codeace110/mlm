@@ -8,34 +8,32 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('referral_code', 32)->unique()->after('id');
-            $table->foreignId('sponsor_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('placement_side', 5)->nullable(); // 'left' or 'right'
-            
-            // enforce only one left & one right per sponsor
-            $table->unique(['sponsor_id','placement_side'], 'unique_sponsor_side');
+        Schema::create('users', function (Blueprint $table) {
+            // use string ID instead of auto-increment
+            $table->string('id', 20)->primary();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+
+            $table->string('referral_code', 32)->unique(); // code they share
+            $table->string('sponsor_id', 20)->nullable();  // assigned only when approved
+            $table->string('placement_side', 5)->nullable();
+
+            $table->rememberToken();
+            $table->timestamps();
+
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // drop unique index by name
-            $table->dropUnique('unique_sponsor_side');
-
-            // drop columns
-            $table->dropColumn(['referral_code', 'sponsor_id', 'placement_side']);
-        });
+        Schema::dropIfExists('users');
     }
 };
