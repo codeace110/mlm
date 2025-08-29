@@ -49,11 +49,11 @@
       </a>
       </li>
 
-      <!-- Tables -->
+      <!-- Referrals -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.table') ? 'active' : '' }}" href="{{ route('dashboard.table') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.referrals') ? 'active' : '' }}" href="{{ route('dashboard.referrals') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-            <!-- Tables Icon -->
+            <!-- Referrals Icon -->
             <svg width="12px" height="12px" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
               <title>office</title>
               <g fill="#FFFFFF" fill-rule="nonzero">
@@ -65,13 +65,13 @@
               </g>
             </svg>
           </div>
-          <span class="nav-link-text ms-1">Tables</span>
+          <span class="nav-link-text ms-1">Referrals</span>
         </a>
       </li>
 
       <!-- Bonus Details -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.billing') ? 'active' : '' }}" href="{{ route('dashboard.billing') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.earnings') ? 'active' : '' }}" href="{{ route('dashboard.earnings') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- Credit Card Icon -->
             <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
@@ -84,7 +84,7 @@
               </g>
             </svg>
           </div>
-          <span class="nav-link-text ms-1">Bonus Details</span>
+          <span class="nav-link-text ms-1">Bonus and Earnings</span>
         </a>
       </li>
 

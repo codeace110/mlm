@@ -23,14 +23,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    Route::get('/dashboard/table', function () {
-        return view('dashboardtable');
-    })->name('dashboard.table');
+    Route::get('/dashboard/referrals', function () {
+        return view('dashboardreferrals');
+    })->name('dashboard.referrals');
 
 
-        Route::get('/dashboard/billing', function () {
-        return view('dashboardbilling');
-    })->name('dashboard.billing');
+        Route::get('/dashboard/earnings', function () {
+        return view('dashboardearnings');
+    })->name('dashboard.earnings');
     
     Route::get('/dashboard/profile', function () {
         return view('dashboardprofile');
