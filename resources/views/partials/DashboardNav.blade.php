@@ -68,26 +68,6 @@
           <span class="nav-link-text ms-1">Referrals</span>
         </a>
       </li>
-
-      <!-- Bonus Details -->
-      <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.earnings') ? 'active' : '' }}" href="{{ route('dashboard.earnings') }}">
-          <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-            <!-- Credit Card Icon -->
-            <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
-              <title>credit-card</title>
-              <g fill="#FFFFFF" fill-rule="nonzero">
-                <path class="color-background opacity-6"
-                      d="M43,10.75V3.58C43,1.6 41.4,0 39.4,0H3.6C1.6,0 0,1.6 0,3.58V10.75H43Z"/>
-                <path class="color-background"
-                      d="M0,16.13V32.25C0,34.23 1.6,35.83 3.6,35.83H39.4C41.4,35.83 43,34.23 43,32.25V16.13H0ZM19.7,26.88H7.17V23.29H19.7V26.88Z"/>
-              </g>
-            </svg>
-          </div>
-          <span class="nav-link-text ms-1">Bonus and Earnings</span>
-        </a>
-      </li>
-
       <!-- Network -->
       <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('dashboard.network*') ? 'active' : '' }}" href="{{ Route('dashboard.network') }}">
@@ -104,6 +84,27 @@
           <span class="nav-link-text ms-1">Network</span>
         </a>
       </li>
+
+
+       <!-- Withdrawal Payout Request -->
+      <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('dashboard.payout') ? 'active' : '' }}" href="{{ route('dashboard.payout') }}">
+          <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+            <!-- Withdrawal Payout Request -->
+            <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
+              <title>Payout</title>
+              <g fill="#FFFFFF" fill-rule="nonzero">
+                <path class="color-background opacity-6"
+                      d="M43,10.75V3.58C43,1.6 41.4,0 39.4,0H3.6C1.6,0 0,1.6 0,3.58V10.75H43Z"/>
+                <path class="color-background"
+                      d="M0,16.13V32.25C0,34.23 1.6,35.83 3.6,35.83H39.4C41.4,35.83 43,34.23 43,32.25V16.13H0ZM19.7,26.88H7.17V23.29H19.7V26.88Z"/>
+              </g>
+            </svg>
+          </div>
+          <span class="nav-link-text ms-1">Payout</span>
+        </a>
+      </li>
+
 
       <!-- Notifications -->
       <li class="nav-item">

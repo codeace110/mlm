@@ -28,9 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard.referrals');
 
 
-        Route::get('/dashboard/earnings', function () {
-        return view('dashboardearnings');
-    })->name('dashboard.earnings');
+        Route::get('/dashboard/payout', function () {
+        return view('dashboardpayout');
+    })->name('dashboard.payout');
     
     Route::get('/dashboard/profile', function () {
         return view('dashboardprofile');
