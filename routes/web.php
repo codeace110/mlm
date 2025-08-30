@@ -18,6 +18,8 @@ Route::get('/', function () {
     return view('home');
 });
 
+
+// for user dashboard Routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
@@ -50,6 +52,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboardpackage');
     })->name('dashboard.package');
 
+
+});
+
+// Admin dashboard Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/admin/dashboard', function () {
+        return view('admin/dashboard');
+    })->name('dashboard');
+
+   
 
 });
 
