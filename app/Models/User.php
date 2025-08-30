@@ -32,6 +32,7 @@ class User extends Authenticatable
         'referral_code',
         'sponsor_id',
         'placement_side',
+        'is_admin',
     ];
 
     /**
@@ -47,6 +48,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_admin' => 'boolean',
     ];
 
     /**
