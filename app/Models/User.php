@@ -33,6 +33,12 @@ class User extends Authenticatable
         'sponsor_id',
         'placement_side',
         'is_admin',
+        'status',
+        'level',
+        'profile_image',
+        'phone',
+        'address',
+        'account_balance',
     ];
 
     /**
@@ -49,19 +55,45 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_admin' => 'boolean',
+        'account_balance' => 'decimal:2',
     ];
 
     /**
      * Relationships
      */
-    public function referral()
+    public function referrals()
     {
-        return $this->hasOne(Referral::class);
+        return $this->hasMany(Referral::class, 'user_id');
     }
 
-    public function referralUsed()
+    public function sponsorReferrals()
     {
-        return $this->hasOne(Referral::class, 'used_by');
+        return $this->hasMany(Referral::class, 'sponsor_id');
+    }
+
+    public function sponsor()
+    {
+        return $this->belongsTo(User::class, 'sponsor_id');
+    }
+
+    public function downlines()
+    {
+        return $this->hasMany(User::class, 'sponsor_id');
+    }
+
+    public function earnings()
+    {
+        return $this->hasMany(Earning::class);
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
+    public function totalEarnings()
+    {
+        return $this->earnings()->sum('amount');
     }
 
     /**
