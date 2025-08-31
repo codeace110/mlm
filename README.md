@@ -361,7 +361,7 @@ npm install
                 <li>
                     <strong>Environment Configuration</strong>
                     <div class="code-block">
-cp .env.example .env<br>
+copy .env.example .env<br>
 php artisan key:generate
                     </div>
                     <p>Update your <code>.env</code> file with database credentials and app settings.</p>
