@@ -9,7 +9,11 @@ class UserController extends Controller
 {
     public function dashboard()
     {
-        return view('admin.dashboard');
+        $totalUsers = User::count();
+        $activePlans = \App\Models\Package::where('is_active', true)->count();
+        $pendingWithdrawals = \App\Models\Withdrawal::where('status', 'pending')->count();
+
+        return view('admin.dashboard', compact('totalUsers', 'activePlans', 'pendingWithdrawals'));
     }
 
     public function index()
@@ -28,5 +32,10 @@ class UserController extends Controller
     {
         $user->update(['status' => 'denied']);
         return back()->with('error', 'User denied!');
+    }
+
+    public function show(User $user)
+    {
+        return view('admin.users.show', compact('user'));
     }
 }

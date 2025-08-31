@@ -2,49 +2,6 @@
 @section('content')
 <div class="container-fluid py-4">
 
-  @php
-    // Dummy referrals
-    $referrals = [
-      (object)[
-        'id' => 1,
-        'name' => 'John Doe',
-        'email' => 'john@example.com',
-        'profile_photo_url' => asset('assets/img/team-1.jpg'),
-        'placement' => 'left',
-        'leg' => 'A',
-        'status' => 'active',
-        'created_at' => now()->subDays(5),
-      ],
-      (object)[
-        'id' => 2,
-        'name' => 'Jane Smith',
-        'email' => 'jane@example.com',
-        'profile_photo_url' => asset('assets/img/team-2.jpg'),
-        'placement' => 'right',
-        'leg' => 'B',
-        'status' => 'inactive',
-        'created_at' => now()->subDays(10),
-      ],
-    ];
-
-    // Dummy earnings
-    $earnings = [
-      (object)[
-        'id' => 1,
-        'referral' => (object)['name' => 'John Doe'],
-        'package_name' => 'Starter Pack',
-        'commission' => 50,
-        'progress' => 60,
-      ],
-      (object)[
-        'id' => 2,
-        'referral' => (object)['name' => 'Jane Smith'],
-        'package_name' => 'Pro Pack',
-        'commission' => 120,
-        'progress' => 80,
-      ],
-    ];
-  @endphp
 
   <!-- My Referrals Table -->
   <div class="row">
@@ -71,7 +28,7 @@
                   <td>
                     <div class="d-flex px-2 py-1">
                       <div>
-                        <img src="{{ $ref->profile_photo_url }}" class="avatar avatar-sm me-3" alt="user">
+                        <img src="{{ asset('assets/img/team-1.jpg') }}" class="avatar avatar-sm me-3" alt="user">
                       </div>
                       <div class="d-flex flex-column justify-content-center">
                         <h6 class="mb-0 text-sm">{{ $ref->name }}</h6>
@@ -80,14 +37,14 @@
                     </div>
                   </td>
                   <td>
-                    <p class="text-xs font-weight-bold mb-0">{{ ucfirst($ref->placement) }}</p>
-                    <p class="text-xs text-secondary mb-0">Leg: {{ ucfirst($ref->leg) }}</p>
+                    <p class="text-xs font-weight-bold mb-0">{{ ucfirst($ref->placement_side ?? 'left') }}</p>
+                    <p class="text-xs text-secondary mb-0">Downlines: {{ $ref->total_downlines }}</p>
                   </td>
                   <td class="align-middle text-center text-sm">
-                    @if($ref->status === 'active')
+                    @if($ref->status === 'approved')
                       <span class="badge badge-sm bg-gradient-success">Active</span>
                     @else
-                      <span class="badge badge-sm bg-gradient-secondary">Inactive</span>
+                      <span class="badge badge-sm bg-gradient-warning">{{ ucfirst($ref->status) }}</span>
                     @endif
                   </td>
                   <td class="align-middle text-center">
@@ -132,20 +89,20 @@
                 </tr>
               </thead>
               <tbody>
-                @forelse($earnings as $earn)
+                @forelse($referralEarnings as $earn)
                 <tr>
                   <td>
                     <div class="d-flex px-2">
                       <div class="my-auto">
-                        <h6 class="mb-0 text-sm">{{ $earn->referral->name }}</h6>
+                        <h6 class="mb-0 text-sm">{{ $earn->user->name }}</h6>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <p class="text-sm font-weight-bold mb-0">{{ $earn->package_name }}</p>
+                    <p class="text-sm font-weight-bold mb-0">{{ ucfirst($earn->type) }}</p>
                   </td>
                   <td>
-                    <span class="text-xs font-weight-bold">₱{{ number_format($earn->commission, 2) }}</span>
+                    <span class="text-xs font-weight-bold">₱{{ number_format($earn->amount, 2) }}</span>
                   </td>
                   <td class="align-middle text-center">
                     <div class="d-flex align-items-center justify-content-center">

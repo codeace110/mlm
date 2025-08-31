@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+
+class OnboardingController extends Controller
+{
+    public function show()
+    {
+        $user = Auth::user();
+
+        // If user has completed onboarding, redirect to dashboard
+        if ($user->phone && $user->address) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.onboarding');
+    }
+
+    public function update(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:500',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = Auth::user();
+        $data = $request->only(['phone', 'address']);
+
+        if ($request->hasFile('profile_image')) {
+            $imageName = time() . '.' . $request->profile_image->extension();
+            $request->profile_image->move(public_path('images/profiles'), $imageName);
+            $data['profile_image'] = 'images/profiles/' . $imageName;
+        }
+
+        $user->update($data);
+
+        return redirect()->route('dashboard')->with('success', 'Profile completed successfully!');
+    }
+}

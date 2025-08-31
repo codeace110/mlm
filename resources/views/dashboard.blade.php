@@ -14,9 +14,9 @@
                         <i class="ni ni-circle-08 text-dark text-gradient text-lg opacity-10" aria-hidden="true"></i>
                       </div>
                       <h5 class="text-white font-weight-bolder mb-0 mt-3">
-                        1600
+                        {{ $downlinesCount }}
                       </h5>
-                      <span class="text-white text-sm">Users Active</span>
+                      <span class="text-white text-sm">My Downlines</span>
                     </div>
                     <div class="col-4">
                       <div class="dropdown text-end mb-6">
@@ -37,17 +37,17 @@
             </div>
             <div class="col-lg-6 col-md-6 col-12 mt-4 mt-md-0">
               <div class="card">
-                <span class="mask bg-dark opacity-10 border-radius-lg"></span>
+                <span class="mask bg-success opacity-10 border-radius-lg"></span>
                 <div class="card-body p-3 position-relative">
                   <div class="row">
                     <div class="col-8 text-start">
                       <div class="icon icon-shape bg-white shadow text-center border-radius-2xl">
-                        <i class="ni ni-active-40 text-dark text-gradient text-lg opacity-10" aria-hidden="true"></i>
+                        <i class="ni ni-money-coins text-dark text-gradient text-lg opacity-10" aria-hidden="true"></i>
                       </div>
                       <h5 class="text-white font-weight-bolder mb-0 mt-3">
-                        357
+                        ₱{{ number_format($accountBalance, 2) }}
                       </h5>
-                      <span class="text-white text-sm">Click Events</span>
+                      <span class="text-white text-sm">Account Balance</span>
                     </div>
                     <div class="col-4">
                       <div class="dropstart text-end mb-6">
@@ -55,12 +55,14 @@
                           <i class="fa fa-ellipsis-h text-white"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers2">
-                          <li><a class="dropdown-item border-radius-md" href="javascript:;">Action</a></li>
-                          <li><a class="dropdown-item border-radius-md" href="javascript:;">Another action</a></li>
-                          <li><a class="dropdown-item border-radius-md" href="javascript:;">Something else here</a></li>
+                          <li><a class="dropdown-item border-radius-md" href="{{ route('withdrawals.create') }}">Request Withdrawal</a></li>
+                          <li><a class="dropdown-item border-radius-md" href="{{ route('earnings.index') }}">View Earnings</a></li>
+                          <li><a class="dropdown-item border-radius-md" href="javascript:;">Balance History</a></li>
                         </ul>
                       </div>
-                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">+124%</p>
+                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">
+                        <span id="balance-change">+0%</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -78,9 +80,9 @@
                         <i class="ni ni-cart text-dark text-gradient text-lg opacity-10" aria-hidden="true"></i>
                       </div>
                       <h5 class="text-white font-weight-bolder mb-0 mt-3">
-                        2300
+                        ₱{{ number_format($totalWithdrawals, 2) }}
                       </h5>
-                      <span class="text-white text-sm">Purchases</span>
+                      <span class="text-white text-sm">Total Withdrawals</span>
                     </div>
                     <div class="col-4">
                       <div class="dropdown text-end mb-6">
@@ -109,9 +111,9 @@
                         <i class="ni ni-like-2 text-dark text-gradient text-lg opacity-10" aria-hidden="true"></i>
                       </div>
                       <h5 class="text-white font-weight-bolder mb-0 mt-3">
-                        940
+                        ₱{{ number_format($pendingEarnings, 2) }}
                       </h5>
-                      <span class="text-white text-sm">Likes</span>
+                      <span class="text-white text-sm">Pending Earnings</span>
                     </div>
                     <div class="col-4">
                       <div class="dropstart text-end mb-6">
@@ -481,60 +483,49 @@
             </div>
             <div class="card-body p-3">
               <div class="timeline timeline-one-side">
+                @forelse($recentReferrals as $referral)
                 <div class="timeline-block mb-3">
                   <span class="timeline-step">
-                    <i class="ni ni-bell-55 text-success text-gradient"></i>
+                    <i class="ni ni-single-02 text-success text-gradient"></i>
                   </span>
                   <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">₱2400, Design changes</h6>
-                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">22 DEC 7:20 PM</p>
+                    <h6 class="text-dark text-sm font-weight-bold mb-0">New Referral: {{ $referral->name }}</h6>
+                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">{{ $referral->created_at->format('d M H:i') }}</p>
                   </div>
                 </div>
+                @empty
                 <div class="timeline-block mb-3">
                   <span class="timeline-step">
-                    <i class="ni ni-html5 text-danger text-gradient"></i>
+                    <i class="ni ni-single-02 text-muted"></i>
                   </span>
                   <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">New order #1832412</h6>
-                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">21 DEC 11 PM</p>
+                    <h6 class="text-dark text-sm font-weight-bold mb-0">No recent referrals</h6>
+                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">Share your referral link to get started</p>
                   </div>
                 </div>
+                @endforelse
+
+                @forelse($recentEarnings as $earning)
                 <div class="timeline-block mb-3">
                   <span class="timeline-step">
-                    <i class="ni ni-cart text-info text-gradient"></i>
+                    <i class="ni ni-money-coins text-info text-gradient"></i>
                   </span>
                   <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">Server payments for April</h6>
-                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">21 DEC 9:34 PM</p>
+                    <h6 class="text-dark text-sm font-weight-bold mb-0">₱{{ number_format($earning->amount, 2) }} - {{ $earning->type }}</h6>
+                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">{{ $earning->created_at->format('d M H:i') }}</p>
                   </div>
                 </div>
+                @empty
                 <div class="timeline-block mb-3">
                   <span class="timeline-step">
-                    <i class="ni ni-credit-card text-warning text-gradient"></i>
+                    <i class="ni ni-money-coins text-muted"></i>
                   </span>
                   <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">New card added for order #4395133</h6>
-                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">20 DEC 2:20 AM</p>
+                    <h6 class="text-dark text-sm font-weight-bold mb-0">No recent earnings</h6>
+                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">Earnings will appear here</p>
                   </div>
                 </div>
-                <div class="timeline-block mb-3">
-                  <span class="timeline-step">
-                    <i class="ni ni-key-25 text-primary text-gradient"></i>
-                  </span>
-                  <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">Unlock packages for development</h6>
-                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">18 DEC 4:54 AM</p>
-                  </div>
-                </div>
-                <div class="timeline-block">
-                  <span class="timeline-step">
-                    <i class="ni ni-money-coins text-dark text-gradient"></i>
-                  </span>
-                  <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">New order #9583120</h6>
-                    <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">17 DEC</p>
-                  </div>
-                </div>
+                @endforelse
               </div>
             </div>
           </div>
@@ -547,9 +538,15 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="d-flex flex-column h-100">
-                    <p class="mb-1 pt-2 text-bold">Built by developers</p>
-                    <h5 class="font-weight-bolder">Soft UI Dashboard</h5>
-                    <p class="mb-5">From colors, cards, typography to complex elements, you will find the full documentation.</p>
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ Auth::user()->profile_image ? asset(Auth::user()->profile_image) : asset('assets/img/team-1.jpg') }}"
+                             class="avatar avatar-xl me-3" alt="Profile">
+                        <div>
+                            <p class="mb-1 pt-2 text-bold">Welcome back,</p>
+                            <h5 class="font-weight-bolder">{{ Auth::user()->name }}</h5>
+                            <p class="mb-0">Your referral code: <strong>{{ Auth::user()->referral_code }}</strong></p>
+                        </div>
+                    </div>
                     <a class="text-body text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="javascript:;">
                       Read More
                       <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
@@ -818,5 +815,58 @@
       </div>
     </div>
   </div>
+
+  <script>
+      // AJAX functionality for live updates
+      function updateDashboardStats() {
+          // Update earnings stats
+          fetch('/ajax/earnings/stats')
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Update total earnings
+                      const totalEarningsElement = document.querySelector('.card:contains("Total Earnings") h5');
+                      if (totalEarningsElement) {
+                          totalEarningsElement.textContent = '₱' + new Intl.NumberFormat().format(data.stats.total);
+                      }
+
+                      // Update pending earnings
+                      const pendingEarningsElement = document.querySelector('.card:contains("Pending Earnings") h5');
+                      if (pendingEarningsElement) {
+                          pendingEarningsElement.textContent = '₱' + new Intl.NumberFormat().format(data.stats.pending);
+                      }
+                  }
+              })
+              .catch(error => console.error('Error updating earnings stats:', error));
+
+          // Update withdrawal stats
+          fetch('/ajax/withdrawals/stats')
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Update total withdrawals
+                      const totalWithdrawalsElement = document.querySelector('.card:contains("Total Withdrawals") h5');
+                      if (totalWithdrawalsElement) {
+                          totalWithdrawalsElement.textContent = '₱' + new Intl.NumberFormat().format(data.stats.total);
+                      }
+
+                      // Update account balance
+                      const balanceElement = document.querySelector('.card:contains("Account Balance") h5');
+                      if (balanceElement) {
+                          balanceElement.textContent = '₱' + new Intl.NumberFormat().format(data.stats.available_balance);
+                      }
+                  }
+              })
+              .catch(error => console.error('Error updating withdrawal stats:', error));
+      }
+
+      // Update stats every 30 seconds
+      setInterval(updateDashboardStats, 30000);
+
+      // Initial load
+      document.addEventListener('DOMContentLoaded', function() {
+          updateDashboardStats();
+      });
+  </script>
 
 @endsection

@@ -11,18 +11,24 @@ class Referral extends Model
 
     protected $fillable = [
         'user_id',
-        'code',
-        'is_used',
-        'used_by',
+        'sponsor_id',
+        'placement_side',
+        'status',
+        'approved_by',
     ];
 
-    public function owner()
+    public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function usedBy()
+    public function sponsor()
     {
-        return $this->belongsTo(User::class, 'used_by');
+        return $this->belongsTo(User::class, 'sponsor_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }
