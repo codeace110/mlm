@@ -37,6 +37,8 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/ajax/dashboard/charts', [DashboardController::class, 'ajaxChartData'])->name('ajax.dashboard.charts');
+    Route::get('/ajax/dashboard/earnings-by-type', [DashboardController::class, 'ajaxEarningsByType'])->name('ajax.dashboard.earnings-by-type');
 
     // Referrals and Network
     Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
@@ -68,9 +70,7 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
         return view('DashboardProfile');
     })->name('dashboard.profile');
 
-    Route::get('/dashboard/network', function () {
-        return view('DashboardNetwork');
-    })->name('dashboard.network');
+    Route::get('/dashboard/network', [DashboardController::class, 'network'])->name('dashboard.network');
 
     Route::get('/dashboard/notification', function () {
         return view('DashboardNotification');
@@ -112,6 +112,7 @@ Route::middleware(['auth', 'is_admin'])
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

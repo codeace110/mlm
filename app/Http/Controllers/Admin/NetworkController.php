@@ -15,7 +15,7 @@ class NetworkController extends Controller
         return view('admin.network.index', compact('network'));
     }
 
-    private function calculateLevel($user, $level = 0)
+    private function calculateLevel($user, $level = 1)
     {
         if (!$user->sponsor) {
             return $level;

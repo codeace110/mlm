@@ -48,6 +48,12 @@ class OnboardingController extends Controller
             $data['profile_image'] = 'images/profiles/' . $imageName;
         }
 
+        // Ensure profile_image is included in the update even if no new image is uploaded
+        if (!isset($data['profile_image']) && !$request->hasFile('profile_image')) {
+            // Keep existing profile image if no new one is uploaded
+            $data['profile_image'] = $user->profile_image;
+        }
+
         $user->update($data);
 
         return redirect()->route('dashboard')->with('success', 'Profile completed successfully! Welcome to AKEN MLM.');

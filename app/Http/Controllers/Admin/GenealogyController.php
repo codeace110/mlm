@@ -44,7 +44,7 @@ class GenealogyController extends Controller
 
         $tree = [
             'user' => $user,
-            'level' => $depth,
+            'level' => $depth + 1,
             'children' => []
         ];
 
@@ -58,7 +58,7 @@ class GenealogyController extends Controller
         return $tree;
     }
 
-    private function calculateLevel($user, $level = 0)
+    private function calculateLevel($user, $level = 1)
     {
         if (!$user->sponsor) {
             return $level;

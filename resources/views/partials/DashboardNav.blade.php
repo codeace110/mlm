@@ -244,16 +244,48 @@
             <li class="nav-item d-flex align-items-center">
               <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('packages.index') }}" >Browse Package</a>
             </li>
-            <li class="nav-item d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body font-weight-bold px-0">
-                <i class="fa fa-user me-sm-1"></i>
-                <form action="{{ route('logout') }}" method="POST">
-                   @csrf
-                  <button type="submit" class="nav-link btn btn-link text-start w-100"> 
-                  <span class="nav-link-text ms-1">Log out</span>
-                  </button>
-               </form>
+            <!-- User Info -->
+            <li class="nav-item dropdown d-flex align-items-center">
+              <a href="javascript:;" class="nav-link text-body p-0" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="d-flex align-items-center">
+                  <img src="{{ auth()->user()->profile_image ? asset(auth()->user()->profile_image) : asset('assets/img/team-1.jpg') }}"
+                       class="avatar avatar-sm me-2" alt="Profile">
+                  <span class="d-none d-lg-block">{{ auth()->user()->name }}</span>
+                  <i class="fa fa-chevron-down ms-1 d-none d-lg-block"></i>
+                </div>
               </a>
+              <ul class="dropdown-menu dropdown-menu-end px-2 py-3" aria-labelledby="userDropdown">
+                <li class="px-2">
+                  <div class="d-flex align-items-center">
+                    <img src="{{ auth()->user()->profile_image ? asset(auth()->user()->profile_image) : asset('assets/img/team-1.jpg') }}"
+                         class="avatar avatar-sm me-3" alt="Profile">
+                    <div>
+                      <h6 class="mb-0">{{ auth()->user()->name }}</h6>
+                      <p class="text-sm text-muted mb-0">{{ auth()->user()->email }}</p>
+                      <p class="text-xs text-primary mb-0">Referral Code: {{ auth()->user()->referral_code }}</p>
+                    </div>
+                  </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ route('dashboard.profile') }}">
+                  <i class="fa fa-user me-2"></i>Profile
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('dashboard.network') }}">
+                  <i class="fa fa-sitemap me-2"></i>Network
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('earnings.index') }}">
+                  <i class="fa fa-money-bill me-2"></i>Earnings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="dropdown-item">
+                      <i class="fa fa-sign-out-alt me-2"></i>Log out
+                    </button>
+                  </form>
+                </li>
+              </ul>
             </li>
             <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
               <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">

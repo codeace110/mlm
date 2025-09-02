@@ -8,7 +8,7 @@
       <div class="card card-profile shadow-xl border-radius-xl">
         <div class="card-body text-center">
           <!-- Profile Image -->
-          <img src="{{ asset('assets/img/team-2.jpg') }}" alt="Profile picture"
+          <img src="{{ auth()->user()->profile_image ? asset(auth()->user()->profile_image) : asset('assets/img/team-2.jpg') }}" alt="Profile picture"
                class="rounded-circle shadow border border-2 border-white mb-3"
                width="120" height="120">
 
@@ -60,9 +60,22 @@
           <h6 class="mb-0">Profile Information</h6>
         </div>
         <div class="card-body pt-4 p-3">
-          <form method="POST" action="{{ route('profile.update') }}">
+          <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
             @csrf
-            @method('PUT')
+            @method('PATCH')
+
+            <!-- Profile Image -->
+            <div class="mb-3">
+              <label for="profile_image" class="form-label">Profile Image</label>
+              <input type="file" id="profile_image" name="profile_image"
+                     class="form-control" accept="image/*">
+              @if(auth()->user()->profile_image)
+                <div class="mt-2">
+                  <img src="{{ asset(auth()->user()->profile_image) }}" alt="Current Profile" class="rounded-circle" width="60" height="60">
+                  <small class="text-muted">Current profile image</small>
+                </div>
+              @endif
+            </div>
 
             <div class="row">
               <div class="col-md-6 mb-3">
@@ -80,10 +93,49 @@
               </div>
             </div>
 
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="text" id="phone" name="phone"
+                       class="form-control border px-3"
+                       value="{{ old('phone', auth()->user()->phone) }}">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="shipping_name" class="form-label">Full Name (for Shipping)</label>
+                <input type="text" id="shipping_name" name="shipping_name"
+                       class="form-control border px-3"
+                       value="{{ old('shipping_name', auth()->user()->shipping_name) }}">
+              </div>
+            </div>
+
             <div class="mb-3">
-              <label for="about" class="form-label">About Me</label>
-              <textarea id="about" name="about" rows="3"
-                        class="form-control border px-3">{{ old('about', auth()->user()->about ?? 'Write something about yourself...') }}</textarea>
+              <label for="address" class="form-label">Address</label>
+              <textarea id="address" name="address" rows="3"
+                        class="form-control border px-3">{{ old('address', auth()->user()->address) }}</textarea>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="city" class="form-label">City</label>
+                <input type="text" id="city" name="city"
+                       class="form-control border px-3"
+                       value="{{ old('city', auth()->user()->city) }}">
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="province" class="form-label">Province</label>
+                <input type="text" id="province" name="province"
+                       class="form-control border px-3"
+                       value="{{ old('province', auth()->user()->province) }}">
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="postal_code" class="form-label">Postal Code</label>
+                <input type="text" id="postal_code" name="postal_code"
+                       class="form-control border px-3"
+                       value="{{ old('postal_code', auth()->user()->postal_code) }}">
+              </div>
             </div>
 
             <div class="text-end">
