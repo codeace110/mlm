@@ -1,4 +1,7 @@
 @extends('layouts.dashboard')
+@php
+    use Illuminate\Support\Str;
+@endphp
 @section('content')
     <div class="container-fluid py-4">
       <div class="row">
@@ -55,7 +58,7 @@
                           <i class="fa fa-ellipsis-h text-white"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers2">
-                          <li><a class="dropdown-item border-radius-md" href="{{ route('withdrawals.create') }}">Request Withdrawal</a></li>
+                          <li><a class="dropdown-item border-radius-md" href="{{ route('dashboard.payout') }}">Request Withdrawal</a></li>
                           <li><a class="dropdown-item border-radius-md" href="{{ route('earnings.index') }}">View Earnings</a></li>
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Balance History</a></li>
                         </ul>
@@ -197,288 +200,102 @@
       </div>
       <div class="row my-4">
         <div class="col-lg-8 col-md-6 mb-md-0 mb-4">
-          <div class="card">
-            <div class="card-header pb-0">
-              <div class="row">
-                <div class="col-lg-6 col-7">
-                  <h6>Products</h6>
-                  <p class="text-sm mb-0">
-                    <i class="fa fa-check text-info" aria-hidden="true"></i>
-                    <span class="font-weight-bold ms-1">30 done</span> this month
-                  </p>
-                </div>
-                <div class="col-lg-6 col-5 my-auto text-end">
-                  <div class="dropdown float-lg-end pe-4">
-                    <a class="cursor-pointer" id="dropdownTable" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fa fa-ellipsis-v text-secondary"></i>
-                    </a>
-                    <ul class="dropdown-menu px-2 py-3 ms-sm-n4 ms-n5" aria-labelledby="dropdownTable">
-                      <li><a class="dropdown-item border-radius-md" href="javascript:;">Action</a></li>
-                      <li><a class="dropdown-item border-radius-md" href="javascript:;">Another action</a></li>
-                      <li><a class="dropdown-item border-radius-md" href="javascript:;">Something else here</a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+      <div class="card">
+        <div class="card-header pb-0">
+          <div class="row">
+            <div class="col-lg-6 col-7">
+              <h6>Available Packages</h6>
+              <p class="text-sm mb-0">
+                <i class="fa fa-shopping-bag text-info" aria-hidden="true"></i>
+                <span class="font-weight-bold ms-1">{{ $availablePackages->count() }} packages</span> available
+              </p>
             </div>
-            <div class="card-body px-0 pb-2">
-              <div class="table-responsive">
-                <table class="table align-items-center mb-0">
-                  <thead>
-                    <tr>
-                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Companies</th>
-                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Members</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Budget</th>
-                      <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Completion</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div>
-                            <img src="../assets/img/small-logos/logo-xd.svg" class="avatar avatar-sm me-3" alt="xd">
-                          </div>
-                          <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Bronze Level</h6>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="avatar-group mt-2">
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Ryan Tompson">
-                            <img src="../assets/img/team-1.jpg" alt="team1">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Romina Hadid">
-                            <img src="../assets/img/team-2.jpg" alt="team2">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Alexander Smith">
-                            <img src="../assets/img/team-3.jpg" alt="team3">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Jessica Doe">
-                            <img src="../assets/img/team-4.jpg" alt="team4">
-                          </a>
-                        </div>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="text-xs font-weight-bold"> ₱14,000 </span>
-                      </td>
-                      <td class="align-middle">
-                        <div class="progress-wrapper w-75 mx-auto">
-                          <div class="progress-info">
-                            <div class="progress-percentage">
-                              <span class="text-xs font-weight-bold">60%</span>
-                            </div>
-                          </div>
-                          <div class="progress">
-                            <div class="progress-bar bg-gradient-info w-60" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div>
-                            <img src="../assets/img/small-logos/logo-atlassian.svg" class="avatar avatar-sm me-3" alt="atlassian">
-                          </div>
-                          <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Bronze Level</h6>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="avatar-group mt-2">
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Romina Hadid">
-                            <img src="../assets/img/team-2.jpg" alt="team5">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Jessica Doe">
-                            <img src="../assets/img/team-4.jpg" alt="team6">
-                          </a>
-                        </div>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="text-xs font-weight-bold"> ₱3,000 </span>
-                      </td>
-                      <td class="align-middle">
-                        <div class="progress-wrapper w-75 mx-auto">
-                          <div class="progress-info">
-                            <div class="progress-percentage">
-                              <span class="text-xs font-weight-bold">10%</span>
-                            </div>
-                          </div>
-                          <div class="progress">
-                            <div class="progress-bar bg-gradient-info w-10" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div>
-                            <img src="../assets/img/small-logos/logo-slack.svg" class="avatar avatar-sm me-3" alt="team7">
-                          </div>
-                          <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Gold Level</h6>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="avatar-group mt-2">
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Romina Hadid">
-                            <img src="../assets/img/team-3.jpg" alt="team8">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Jessica Doe">
-                            <img src="../assets/img/team-1.jpg" alt="team9">
-                          </a>
-                        </div>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="text-xs font-weight-bold"> Not set </span>
-                      </td>
-                      <td class="align-middle">
-                        <div class="progress-wrapper w-75 mx-auto">
-                          <div class="progress-info">
-                            <div class="progress-percentage">
-                              <span class="text-xs font-weight-bold">100%</span>
-                            </div>
-                          </div>
-                          <div class="progress">
-                            <div class="progress-bar bg-gradient-success w-100" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div>
-                            <img src="../assets/img/small-logos/logo-spotify.svg" class="avatar avatar-sm me-3" alt="spotify">
-                          </div>
-                          <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Silver Level</h6>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="avatar-group mt-2">
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Ryan Tompson">
-                            <img src="../assets/img/team-4.jpg" alt="user1">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Romina Hadid">
-                            <img src="../assets/img/team-3.jpg" alt="user2">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Alexander Smith">
-                            <img src="../assets/img/team-4.jpg" alt="user3">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Jessica Doe">
-                            <img src="../assets/img/team-1.jpg" alt="user4">
-                          </a>
-                        </div>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="text-xs font-weight-bold"> ₱20,500 </span>
-                      </td>
-                      <td class="align-middle">
-                        <div class="progress-wrapper w-75 mx-auto">
-                          <div class="progress-info">
-                            <div class="progress-percentage">
-                              <span class="text-xs font-weight-bold">100%</span>
-                            </div>
-                          </div>
-                          <div class="progress">
-                            <div class="progress-bar bg-gradient-success w-100" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div>
-                            <img src="../assets/img/small-logos/logo-jira.svg" class="avatar avatar-sm me-3" alt="jira">
-                          </div>
-                          <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Silver Level</h6>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="avatar-group mt-2">
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Ryan Tompson">
-                            <img src="../assets/img/team-4.jpg" alt="user5">
-                          </a>
-                        </div>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="text-xs font-weight-bold"> ₱500 </span>
-                      </td>
-                      <td class="align-middle">
-                        <div class="progress-wrapper w-75 mx-auto">
-                          <div class="progress-info">
-                            <div class="progress-percentage">
-                              <span class="text-xs font-weight-bold">25%</span>
-                            </div>
-                          </div>
-                          <div class="progress">
-                            <div class="progress-bar bg-gradient-info w-25" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="25"></div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div>
-                            <img src="../assets/img/small-logos/logo-invision.svg" class="avatar avatar-sm me-3" alt="invision">
-                          </div>
-                          <div class="d-flex flex-column justify-content-center">
-                            <h6 class="mb-0 text-sm">Platinum Level</h6>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="avatar-group mt-2">
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Ryan Tompson">
-                            <img src="../assets/img/team-1.jpg" alt="user6">
-                          </a>
-                          <a href="javascript:;" class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Jessica Doe">
-                            <img src="../assets/img/team-4.jpg" alt="user7">
-                          </a>
-                        </div>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="text-xs font-weight-bold"> ₱2,000 </span>
-                      </td>
-                      <td class="align-middle">
-                        <div class="progress-wrapper w-75 mx-auto">
-                          <div class="progress-info">
-                            <div class="progress-percentage">
-                              <span class="text-xs font-weight-bold">40%</span>
-                            </div>
-                          </div>
-                          <div class="progress">
-                            <div class="progress-bar bg-gradient-info w-40" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="40"></div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div class="col-lg-6 col-5 my-auto text-end">
+              <div class="dropdown float-lg-end pe-4">
+                <a class="cursor-pointer" id="dropdownTable" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fa fa-ellipsis-v text-secondary"></i>
+                </a>
+                <ul class="dropdown-menu px-2 py-3 ms-sm-n4 ms-n5" aria-labelledby="dropdownTable">
+                  <li><a class="dropdown-item border-radius-md" href="{{ route('packages.index') }}">View All Packages</a></li>
+                  <li><a class="dropdown-item border-radius-md" href="javascript:;">Package History</a></li>
+                  <li><a class="dropdown-item border-radius-md" href="javascript:;">Purchase Stats</a></li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
+        <div class="card-body px-0 pb-2">
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Package</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Description</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Price</th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @forelse($availablePackages as $package)
+                <tr>
+                  <td>
+                    <div class="d-flex px-2 py-1">
+                      <div>
+                        @if($package->image)
+                          <img src="{{ asset($package->image) }}" class="avatar avatar-sm me-3" alt="{{ $package->name }}">
+                        @else
+                          <div class="avatar avatar-sm me-3 bg-gradient-primary d-flex align-items-center justify-content-center">
+                            <i class="fa fa-shopping-bag text-white"></i>
+                          </div>
+                        @endif
+                      </div>
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="mb-0 text-sm">{{ $package->name }}</h6>
+                        <p class="text-xs text-secondary mb-0">Package #{{ $package->id }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p class="text-xs font-weight-bold mb-0">{{ Str::limit($package->description, 50) }}</p>
+                    @if($package->features && is_array($package->features))
+                      <small class="text-muted">{{ count($package->features) }} features included</small>
+                    @endif
+                  </td>
+                  <td class="align-middle text-center text-sm">
+                    <span class="text-xs font-weight-bold text-success">₱{{ number_format($package->price, 2) }}</span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <a href="{{ route('packages.show', $package) }}" class="btn btn-sm btn-outline-primary">
+                      View Details
+                    </a>
+                  </td>
+                </tr>
+                @empty
+                <tr>
+                  <td colspan="4" class="text-center py-4">
+                    <div class="d-flex flex-column align-items-center">
+                      <i class="fa fa-shopping-bag fa-2x text-muted mb-3"></i>
+                      <h6 class="text-muted">No packages available</h6>
+                      <p class="text-xs text-muted">Check back later for new packages</p>
+                    </div>
+                  </td>
+                </tr>
+                @endforelse
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
         <div class="col-lg-4 col-md-6">
           <div class="card h-100">
             <div class="card-header pb-0">
-              <h6>Orders overview</h6>
+              <h6>Earnings Overview</h6>
               <p class="text-sm">
                 <i class="fa fa-arrow-up text-success" aria-hidden="true"></i>
-                <span class="font-weight-bold">24%</span> this month
+                <span class="font-weight-bold">₱{{ number_format($totalEarnings, 2) }}</span> total earnings
               </p>
             </div>
             <div class="card-body p-3">
@@ -566,20 +383,20 @@
           </div>
         </div>
         <div class="col-lg-5">
-          <div class="card h-100 p-3">
-            <div class="overflow-hidden position-relative border-radius-lg bg-cover h-100" style="background-image: url('../assets/img/ivancik.jpg');">
-              <span class="mask bg-gradient-dark"></span>
-              <div class="card-body position-relative z-index-1 d-flex flex-column h-100 p-3">
-                <h5 class="text-white font-weight-bolder mb-4 pt-2">Work with the rockets</h5>
-                <p class="text-white">Wealth creation is an evolutionarily recent positive-sum game. It is all about who take the opportunity first.</p>
-                <a class="text-white text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="javascript:;">
-                  Read More
-                  <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
+           <div class="card h-100 p-3">
+             <div class="overflow-hidden position-relative border-radius-lg bg-cover h-100" style="background-image: url('../assets/img/ivancik.jpg');">
+               <span class="mask bg-gradient-dark"></span>
+               <div class="card-body position-relative z-index-1 d-flex flex-column h-100 p-3">
+                 <h5 class="text-white font-weight-bolder mb-4 pt-2">Build Your Network Empire</h5>
+                 <p class="text-white">Join thousands of successful entrepreneurs building passive income through our multi-level marketing platform. Start your journey to financial freedom today.</p>
+                 <a class="text-white text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="{{ route('packages.index') }}">
+                   Explore Packages
+                   <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
+                 </a>
+               </div>
+             </div>
+           </div>
+         </div>
       </div>
       <div class="row mt-4">
         <div class="col-lg-5 mb-lg-0 mb-4">
@@ -590,8 +407,8 @@
                   <canvas id="chart-bars" class="chart-canvas" height="170"></canvas>
                 </div>
               </div>
-              <h6 class="ms-2 mt-4 mb-0"> Active Users </h6>
-              <p class="text-sm ms-2"> (<span class="font-weight-bolder">+23%</span>) than last week </p>
+              <h6 class="ms-2 mt-4 mb-0"> Network Performance </h6>
+              <p class="text-sm ms-2"> (<span class="font-weight-bolder">{{ $networkStats['level1'] + $networkStats['level2'] + $networkStats['level3'] }}%</span>) network growth </p>
               <div class="container border-radius-lg">
                 <div class="row">
                   <div class="col-3 py-3 ps-0">
@@ -611,11 +428,11 @@
                           </g>
                         </svg>
                       </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Users</p>
+                      <p class="text-xs mt-1 mb-0 font-weight-bold">Direct</p>
                     </div>
-                    <h4 class="font-weight-bolder">36K</h4>
+                    <h4 class="font-weight-bolder">{{ $networkStats['level1'] }}</h4>
                     <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-60" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['level1'] * 10) }}" role="progressbar" aria-valuenow="{{ $networkStats['level1'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                   </div>
                   <div class="col-3 py-3 ps-0">
@@ -637,11 +454,11 @@
                           </g>
                         </svg>
                       </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Clicks</p>
+                      <p class="text-xs mt-1 mb-0 font-weight-bold">Level 2</p>
                     </div>
-                    <h4 class="font-weight-bolder">2m</h4>
+                    <h4 class="font-weight-bolder">{{ $networkStats['level2'] }}</h4>
                     <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-90" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"></div>
+                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['level2'] * 10) }}" role="progressbar" aria-valuenow="{{ $networkStats['level2'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                   </div>
                   <div class="col-3 py-3 ps-0">
@@ -661,11 +478,11 @@
                           </g>
                         </svg>
                       </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Sales</p>
+                      <p class="text-xs mt-1 mb-0 font-weight-bold">Level 3</p>
                     </div>
-                    <h4 class="font-weight-bolder">435₱</h4>
+                    <h4 class="font-weight-bolder">{{ $networkStats['level3'] }}</h4>
                     <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-30" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['level3'] * 10) }}" role="progressbar" aria-valuenow="{{ $networkStats['level3'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                   </div>
                   <div class="col-3 py-3 ps-0">
@@ -686,11 +503,11 @@
                           </g>
                         </svg>
                       </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Items</p>
+                      <p class="text-xs mt-1 mb-0 font-weight-bold">Total</p>
                     </div>
-                    <h4 class="font-weight-bolder">43</h4>
+                    <h4 class="font-weight-bolder">{{ $networkStats['total'] }}</h4>
                     <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-50" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['total'] * 5) }}" role="progressbar" aria-valuenow="{{ $networkStats['total'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                   </div>
                 </div>
@@ -867,6 +684,201 @@
       document.addEventListener('DOMContentLoaded', function() {
           updateDashboardStats();
       });
+  </script>
+
+  <!-- Custom Chart Scripts for MLM Dashboard -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      loadChartData();
+  });
+
+  function loadChartData() {
+      // Fetch earnings and network data
+      fetch('/ajax/dashboard/charts')
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  renderEarningsChart(data.earnings);
+                  renderNetworkChart(data.network);
+              }
+          })
+          .catch(error => console.error('Error loading chart data:', error));
+  }
+
+  function renderEarningsChart(earningsData) {
+      const ctx = document.getElementById("chart-bars");
+      if (!ctx) return;
+
+      // Destroy existing chart if it exists
+      if (window.earningsChart) {
+          window.earningsChart.destroy();
+      }
+
+      window.earningsChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+              labels: earningsData.labels,
+              datasets: [{
+                  label: "Monthly Earnings",
+                  tension: 0.4,
+                  borderWidth: 0,
+                  borderRadius: 4,
+                  borderSkipped: false,
+                  backgroundColor: "#fff",
+                  data: earningsData.data,
+                  maxBarThickness: 6
+              }],
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false,
+                  }
+              },
+              interaction: {
+                  intersect: false,
+                  mode: 'index',
+              },
+              scales: {
+                  y: {
+                      grid: {
+                          drawBorder: false,
+                          display: false,
+                          drawOnChartArea: false,
+                          drawTicks: false,
+                      },
+                      ticks: {
+                          suggestedMin: 0,
+                          suggestedMax: Math.max(...earningsData.data) * 1.2 || 500,
+                          beginAtZero: true,
+                          padding: 15,
+                          font: {
+                              size: 14,
+                              family: "Inter",
+                              style: 'normal',
+                              lineHeight: 2
+                          },
+                          color: "#fff"
+                      },
+                  },
+                  x: {
+                      grid: {
+                          drawBorder: false,
+                          display: false,
+                          drawOnChartArea: false,
+                          drawTicks: false
+                      },
+                      ticks: {
+                          display: true,
+                          color: "#fff",
+                          padding: 10,
+                          font: {
+                              size: 12,
+                              family: "Inter",
+                              style: 'normal'
+                          }
+                      },
+                  },
+              },
+          },
+      });
+  }
+
+  function renderNetworkChart(networkData) {
+      const ctx = document.getElementById("chart-line");
+      if (!ctx) return;
+
+      // Destroy existing chart if it exists
+      if (window.networkChart) {
+          window.networkChart.destroy();
+      }
+
+      var gradientStroke1 = ctx.createLinearGradient(0, 230, 0, 50);
+      gradientStroke1.addColorStop(1, 'rgba(203,12,159,0.2)');
+      gradientStroke1.addColorStop(0.2, 'rgba(72,72,176,0.0)');
+      gradientStroke1.addColorStop(0, 'rgba(203,12,159,0)');
+
+      window.networkChart = new Chart(ctx, {
+          type: "line",
+          data: {
+              labels: networkData.labels,
+              datasets: [{
+                  label: "Network Growth",
+                  tension: 0.4,
+                  borderWidth: 0,
+                  pointRadius: 0,
+                  borderColor: "#cb0c9f",
+                  borderWidth: 3,
+                  backgroundColor: gradientStroke1,
+                  fill: true,
+                  data: networkData.data,
+                  maxBarThickness: 6
+              }],
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false,
+                  }
+              },
+              interaction: {
+                  intersect: false,
+                  mode: 'index',
+              },
+              scales: {
+                  y: {
+                      grid: {
+                          drawBorder: false,
+                          display: true,
+                          drawOnChartArea: true,
+                          drawTicks: false,
+                          borderDash: [5, 5]
+                      },
+                      ticks: {
+                          display: true,
+                          padding: 10,
+                          color: '#b2b9bf',
+                          font: {
+                              size: 11,
+                              family: "Inter",
+                              style: 'normal',
+                              lineHeight: 2
+                          },
+                      }
+                  },
+                  x: {
+                      grid: {
+                          drawBorder: false,
+                          display: false,
+                          drawOnChartArea: false,
+                          drawTicks: false,
+                          borderDash: [5, 5]
+                      },
+                      ticks: {
+                          display: true,
+                          color: '#b2b9bf',
+                          padding: 20,
+                          font: {
+                              size: 11,
+                              family: "Inter",
+                              style: 'normal',
+                              lineHeight: 2
+                          },
+                      }
+                  },
+              },
+          },
+      });
+  }
+
+  // Auto-refresh charts every 5 minutes
+  setInterval(function() {
+      loadChartData();
+  }, 300000);
   </script>
 
 @endsection

@@ -37,7 +37,7 @@
 
           <!-- Product Packages -->
       <li class="nav-item">
-      <a class="nav-link {{ request()->routeIs('dashboard.package*') ? 'active' : '' }}" href="{{ Route('dashboard.package') }}">
+      <a class="nav-link {{ request()->routeIs('packages.*') ? 'active' : '' }}" href="{{ route('packages.index') }}">
         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
           <!-- Shopping Bag Icon -->
           <svg width="12px" height="12px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000ff">
@@ -70,7 +70,7 @@
       </li>
       <!-- Network -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.network*') ? 'active' : '' }}" href="{{ Route('dashboard.network') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.network*') ? 'active' : '' }}" href="{{ route('dashboard.network') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- 3D Box Icon -->
             <svg width="12px" height="12px" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
@@ -87,28 +87,28 @@
 
 
        <!-- Withdrawal Payout Request -->
+       <li class="nav-item">
+         <a class="nav-link {{ request()->routeIs('dashboard.payout') ? 'active' : '' }}" href="{{ route('dashboard.payout') }}">
+           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+             <!-- Withdrawal Payout Request -->
+             <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
+               <title>Payout</title>
+               <g fill="#FFFFFF" fill-rule="nonzero">
+                 <path class="color-background opacity-6"
+                       d="M43,10.75V3.58C43,1.6 41.4,0 39.4,0H3.6C1.6,0 0,1.6 0,3.58V10.75H43Z"/>
+                 <path class="color-background"
+                       d="M0,16.13V32.25C0,34.23 1.6,35.83 3.6,35.83H39.4C41.4,35.83 43,34.23 43,32.25V16.13H0ZM19.7,26.88H7.17V23.29H19.7V26.88Z"/>
+               </g>
+             </svg>
+           </div>
+           <span class="nav-link-text ms-1">Payout</span>
+         </a>
+       </li>
+ 
+ 
+       <!-- Notifications -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.payout') ? 'active' : '' }}" href="{{ route('dashboard.payout') }}">
-          <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-            <!-- Withdrawal Payout Request -->
-            <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
-              <title>Payout</title>
-              <g fill="#FFFFFF" fill-rule="nonzero">
-                <path class="color-background opacity-6"
-                      d="M43,10.75V3.58C43,1.6 41.4,0 39.4,0H3.6C1.6,0 0,1.6 0,3.58V10.75H43Z"/>
-                <path class="color-background"
-                      d="M0,16.13V32.25C0,34.23 1.6,35.83 3.6,35.83H39.4C41.4,35.83 43,34.23 43,32.25V16.13H0ZM19.7,26.88H7.17V23.29H19.7V26.88Z"/>
-              </g>
-            </svg>
-          </div>
-          <span class="nav-link-text ms-1">Payout</span>
-        </a>
-      </li>
-
-
-      <!-- Notifications -->
-      <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.notification*') ? 'active' : '' }}" href="{{ Route('dashboard.notification') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.notification*') ? 'active' : '' }}" href="{{ route('dashboard.notification') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- Settings Icon -->
             <svg width="12px" height="12px" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
@@ -191,6 +191,14 @@
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Network</li>
                 @elseif(request()->routeIs('dashboard.notification*'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Notifications</li>
+                @elseif(request()->routeIs('dashboard.payout'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Payout</li>
+                @elseif(request()->routeIs('packages.index'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Packages</li>
+                @elseif(request()->routeIs('packages.show'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Package Details</li>
+                @elseif(request()->routeIs('packages.payment'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Payment Method</li>
                 @elseif(request()->routeIs('dashboard.profile'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Profile</li>
                 @else
@@ -209,6 +217,14 @@
                     Network
                 @elseif(request()->routeIs('dashboard.notification*'))
                     Notifications
+                @elseif(request()->routeIs('dashboard.payout'))
+                    Payout
+                @elseif(request()->routeIs('packages.index'))
+                    Packages
+                @elseif(request()->routeIs('packages.show'))
+                    Package Details
+                @elseif(request()->routeIs('packages.payment'))
+                    Payment Method
                 @elseif(request()->routeIs('dashboard.profile'))
                     Profile
                 @else
@@ -226,18 +242,50 @@
           </div>
           <ul class="navbar-nav  justify-content-end">
             <li class="nav-item d-flex align-items-center">
-              <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('dashboard.package') }}" >Browse Package</a>
+              <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('packages.index') }}" >Browse Package</a>
             </li>
-            <li class="nav-item d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body font-weight-bold px-0">
-                <i class="fa fa-user me-sm-1"></i>
-                <form action="{{ route('logout') }}" method="POST">
-                   @csrf
-                  <button type="submit" class="nav-link btn btn-link text-start w-100"> 
-                  <span class="nav-link-text ms-1">Log out</span>
-                  </button>
-               </form>
+            <!-- User Info -->
+            <li class="nav-item dropdown d-flex align-items-center">
+              <a href="javascript:;" class="nav-link text-body p-0" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="d-flex align-items-center">
+                  <img src="{{ auth()->user()->profile_image ? asset(auth()->user()->profile_image) : asset('assets/img/team-1.jpg') }}"
+                       class="avatar avatar-sm me-2" alt="Profile">
+                  <span class="d-none d-lg-block">{{ auth()->user()->name }}</span>
+                  <i class="fa fa-chevron-down ms-1 d-none d-lg-block"></i>
+                </div>
               </a>
+              <ul class="dropdown-menu dropdown-menu-end px-2 py-3" aria-labelledby="userDropdown">
+                <li class="px-2">
+                  <div class="d-flex align-items-center">
+                    <img src="{{ auth()->user()->profile_image ? asset(auth()->user()->profile_image) : asset('assets/img/team-1.jpg') }}"
+                         class="avatar avatar-sm me-3" alt="Profile">
+                    <div>
+                      <h6 class="mb-0">{{ auth()->user()->name }}</h6>
+                      <p class="text-sm text-muted mb-0">{{ auth()->user()->email }}</p>
+                      <p class="text-xs text-primary mb-0">Referral Code: {{ auth()->user()->referral_code }}</p>
+                    </div>
+                  </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ route('dashboard.profile') }}">
+                  <i class="fa fa-user me-2"></i>Profile
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('dashboard.network') }}">
+                  <i class="fa fa-sitemap me-2"></i>Network
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('earnings.index') }}">
+                  <i class="fa fa-money-bill me-2"></i>Earnings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="dropdown-item">
+                      <i class="fa fa-sign-out-alt me-2"></i>Log out
+                    </button>
+                  </form>
+                </li>
+              </ul>
             </li>
             <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
               <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">

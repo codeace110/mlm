@@ -111,7 +111,7 @@ class ReferralController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'level' => $depth,
+            'level' => $depth + 1,
             'earnings' => $totalEarnings,
             'children' => $children,
             'created_at' => $user->created_at->format('M d, Y')

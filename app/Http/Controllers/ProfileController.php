@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -26,15 +28,42 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $data = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Handle profile image upload
+        if ($request->hasFile('profile_image')) {
+            $imageName = time() . '.' . $request->profile_image->extension();
+            $request->profile_image->move(public_path('images/profiles'), $imageName);
+            $data['profile_image'] = 'images/profiles/' . $imageName;
         }
 
-        $request->user()->save();
+        $user->fill($data);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Update the user's password.
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $user = $request->user();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'password-updated');
     }
 
     /**

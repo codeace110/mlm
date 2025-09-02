@@ -4,6 +4,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\EarningsController;
+use App\Http\Controllers\WithdrawalsController;
+use App\Http\Controllers\PackageController as UserPackageController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\PackageController;
@@ -30,10 +33,12 @@ Route::get('/', function () {
 
 
 // for user dashboard Routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/ajax/dashboard/charts', [DashboardController::class, 'ajaxChartData'])->name('ajax.dashboard.charts');
+    Route::get('/ajax/dashboard/earnings-by-type', [DashboardController::class, 'ajaxEarningsByType'])->name('ajax.dashboard.earnings-by-type');
 
     // Referrals and Network
     Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
@@ -45,32 +50,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/ajax/earnings/stats', [EarningsController::class, 'ajaxStats'])->name('ajax.earnings.stats');
     Route::get('/ajax/earnings/recent', [EarningsController::class, 'ajaxRecent'])->name('ajax.earnings.recent');
 
-    // Withdrawals
-    Route::get('/withdrawals', [WithdrawalsController::class, 'index'])->name('withdrawals.index');
-    Route::get('/withdrawals/create', [WithdrawalsController::class, 'create'])->name('withdrawals.create');
+    // Withdrawals (Payout functionality)
     Route::post('/withdrawals', [WithdrawalsController::class, 'store'])->name('withdrawals.store');
     Route::get('/ajax/withdrawals/stats', [WithdrawalsController::class, 'ajaxStats'])->name('ajax.withdrawals.stats');
     Route::get('/ajax/withdrawals/recent', [WithdrawalsController::class, 'ajaxRecent'])->name('ajax.withdrawals.recent');
 
     // Packages
-    Route::get('/packages', [PackageController::class, 'index'])->name('packages.index');
-    Route::get('/packages/{package}', [PackageController::class, 'show'])->name('packages.show');
-    Route::post('/packages/{package}/purchase', [PackageController::class, 'purchase'])->name('packages.purchase');
+    Route::get('/packages', [UserPackageController::class, 'index'])->name('packages.index');
+    Route::get('/packages/{package}', [UserPackageController::class, 'show'])->name('packages.show');
+    Route::get('/packages/{package}/payment', [UserPackageController::class, 'payment'])->name('packages.payment');
+    Route::post('/packages/{package}/purchase', [UserPackageController::class, 'purchase'])->name('packages.purchase');
 
     // Legacy routes (keeping for compatibility)
     Route::get('/dashboard/referrals', [ReferralController::class, 'index'])->name('dashboard.referrals');
 
-    Route::get('/dashboard/payout', function () {
-        return view('DashboardPayout');
-    })->name('dashboard.payout');
+    Route::get('/dashboard/payout', [WithdrawalsController::class, 'dashboard'])->name('dashboard.payout');
 
     Route::get('/dashboard/profile', function () {
         return view('DashboardProfile');
     })->name('dashboard.profile');
 
-    Route::get('/dashboard/network', function () {
-        return view('DashboardNetwork');
-    })->name('dashboard.network');
+    Route::get('/dashboard/network', [DashboardController::class, 'network'])->name('dashboard.network');
 
     Route::get('/dashboard/notification', function () {
         return view('DashboardNotification');
@@ -90,6 +90,8 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('users', UserController::class);
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/deny', [UserController::class, 'deny'])->name('users.deny');
+        Route::post('/package-purchases/{packagePurchase}/approve', [UserController::class, 'approvePackagePurchase'])->name('package-purchases.approve');
+        Route::post('/package-purchases/{packagePurchase}/deny', [UserController::class, 'denyPackagePurchase'])->name('package-purchases.deny');
         Route::resource('packages', PackageController::class);
         Route::resource('bonus_rules', BonusRuleController::class);
         Route::post('/bonus_rules/{rule}/activate', [BonusRuleController::class, 'activate'])->name('bonus_rules.activate');
@@ -110,6 +112,7 @@ Route::middleware(['auth', 'is_admin'])
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

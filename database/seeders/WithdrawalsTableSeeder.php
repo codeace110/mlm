@@ -16,7 +16,7 @@ class WithdrawalsTableSeeder extends Seeder
      */
     public function run()
     {
-        $users = User::where('is_admin', false)->get();
+        $users = User::where('is_admin', false)->where('status', 'approved')->get();
         $methods = ['bank_transfer', 'paypal', 'gcash', 'paymaya'];
         $statuses = ['pending', 'approved', 'denied'];
 
@@ -26,15 +26,22 @@ class WithdrawalsTableSeeder extends Seeder
 
             for ($i = 0; $i < $numWithdrawals; $i++) {
                 $method = $methods[array_rand($methods)];
-                $amount = rand(500, 10000); // Random amount between 500 and 10000
+
+                // Ensure amount doesn't exceed user's balance for approved withdrawals
+                $maxAmount = $user->account_balance;
+                if ($maxAmount < 500) {
+                    continue; // Skip if user doesn't have minimum balance
+                }
+
+                $amount = rand(500, min(10000, $maxAmount)); // Random amount between 500 and min(10000, balance)
                 $status = $statuses[array_rand($statuses)];
 
                 $accountDetails = [];
                 switch ($method) {
                     case 'bank_transfer':
                         $accountDetails = [
-                            'bank_name' => 'Sample Bank',
-                            'account_number' => '1234567890',
+                            'bank_name' => ['BDO', 'BPI', 'Metrobank', 'PNB', 'UnionBank'][array_rand(['BDO', 'BPI', 'Metrobank', 'PNB', 'UnionBank'])],
+                            'account_number' => rand(1000000000, 9999999999),
                             'account_name' => $user->name,
                         ];
                         break;
@@ -46,13 +53,13 @@ class WithdrawalsTableSeeder extends Seeder
                     case 'gcash':
                     case 'paymaya':
                         $accountDetails = [
-                            'mobile_number' => '+63' . rand(900000000, 999999999),
+                            'mobile_number' => $user->phone ?? '+63' . rand(900000000, 999999999),
                             'account_name' => $user->name,
                         ];
                         break;
                 }
 
-                Withdrawal::create([
+                $withdrawal = Withdrawal::create([
                     'user_id' => $user->id,
                     'amount' => $amount,
                     'method' => $method,
@@ -60,6 +67,11 @@ class WithdrawalsTableSeeder extends Seeder
                     'status' => $status,
                     'created_at' => now()->subDays(rand(1, 60)), // Random date within last 60 days
                 ]);
+
+                // Deduct balance only for approved withdrawals (as per business logic)
+                if ($status === 'approved') {
+                    $user->decrement('account_balance', $amount);
+                }
             }
         }
 
@@ -67,18 +79,24 @@ class WithdrawalsTableSeeder extends Seeder
         $pendingUsers = $users->take(15); // First 15 users
         foreach ($pendingUsers as $user) {
             if ($user->withdrawals()->where('status', 'pending')->count() == 0) {
-                Withdrawal::create([
-                    'user_id' => $user->id,
-                    'amount' => rand(1000, 5000),
-                    'method' => 'bank_transfer',
-                    'account_details' => [
-                        'bank_name' => 'Test Bank',
-                        'account_number' => '9876543210',
-                        'account_name' => $user->name,
-                    ],
-                    'status' => 'pending',
-                    'created_at' => now()->subDays(rand(1, 7)),
-                ]);
+                // Ensure amount doesn't exceed user's current balance
+                $maxAmount = $user->account_balance;
+                if ($maxAmount >= 500) {
+                    $amount = rand(500, min(5000, $maxAmount));
+
+                    Withdrawal::create([
+                        'user_id' => $user->id,
+                        'amount' => $amount,
+                        'method' => 'bank_transfer',
+                        'account_details' => [
+                            'bank_name' => 'Test Bank',
+                            'account_number' => '9876543210',
+                            'account_name' => $user->name,
+                        ],
+                        'status' => 'pending',
+                        'created_at' => now()->subDays(rand(1, 7)),
+                    ]);
+                }
             }
         }
     }

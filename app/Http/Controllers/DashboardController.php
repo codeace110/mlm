@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Earning;
 use App\Models\Withdrawal;
+use App\Models\Package;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -14,8 +15,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Check if user needs to complete onboarding
-        if (!$user->phone || !$user->address) {
+        // Check if user has completed onboarding (all required fields)
+        if (!$user->phone || !$user->address || !$user->city || !$user->province || !$user->shipping_name) {
             return redirect()->route('onboarding');
         }
 
@@ -54,6 +55,12 @@ class DashboardController extends Controller
             ->groupBy('type')
             ->get();
 
+        // Get available packages for purchase
+        $availablePackages = Package::where('is_active', true)
+            ->orderBy('price', 'asc')
+            ->take(6)
+            ->get();
+
         return view('dashboard', compact(
             'user',
             'downlinesCount',
@@ -65,8 +72,19 @@ class DashboardController extends Controller
             'recentReferrals',
             'recentEarnings',
             'networkStats',
-            'earningsByType'
+            'earningsByType',
+            'availablePackages'
         ));
+    }
+
+    public function network()
+    {
+        $user = Auth::user();
+
+        // Build network tree
+        $networkTree = $this->buildNetworkTree($user);
+
+        return view('DashboardNetwork', compact('networkTree'));
     }
 
     private function getNetworkStatistics($user)
@@ -83,5 +101,98 @@ class DashboardController extends Controller
             'level3' => $level3,
             'total' => $level1 + $level2 + $level3
         ];
+    }
+
+    private function buildNetworkTree($user, $depth = 0, $maxDepth = 3)
+    {
+        if ($depth >= $maxDepth) {
+            return null;
+        }
+
+        $children = User::where('sponsor_id', $user->id)
+            ->with('earnings')
+            ->get()
+            ->map(function($child) use ($depth, $maxDepth) {
+                return $this->buildNetworkTree($child, $depth + 1, $maxDepth);
+            })
+            ->filter()
+            ->values();
+
+        $totalEarnings = $user->earnings->sum('amount');
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'level' => $depth + 1,
+            'earnings' => $totalEarnings,
+            'children' => $children,
+            'created_at' => $user->created_at->format('M d, Y')
+        ];
+    }
+
+    public function ajaxChartData()
+    {
+        $user = Auth::user();
+
+        // Get earnings data for the last 12 months
+        $earningsData = [];
+        $labels = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthName = $date->format('M');
+            $labels[] = $monthName;
+
+            $earnings = Earning::where('user_id', $user->id)
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->sum('amount');
+
+            $earningsData[] = (float) $earnings;
+        }
+
+        // Get network growth data
+        $networkData = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+
+            $networkCount = User::where('sponsor_id', $user->id)
+                ->where('created_at', '<=', $date)
+                ->count();
+
+            $networkData[] = $networkCount;
+        }
+
+        return response()->json([
+            'success' => true,
+            'earnings' => [
+                'labels' => $labels,
+                'data' => $earningsData
+            ],
+            'network' => [
+                'labels' => $labels,
+                'data' => $networkData
+            ]
+        ]);
+    }
+
+    public function ajaxEarningsByType()
+    {
+        $user = Auth::user();
+
+        $earningsByType = Earning::where('user_id', $user->id)
+            ->selectRaw('type, SUM(amount) as total')
+            ->groupBy('type')
+            ->get();
+
+        $labels = $earningsByType->pluck('type')->toArray();
+        $data = $earningsByType->pluck('total')->toArray();
+
+        return response()->json([
+            'success' => true,
+            'labels' => $labels,
+            'data' => $data
+        ]);
     }
 }
