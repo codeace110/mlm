@@ -12,6 +12,8 @@
                         <th>#</th>
                         <th>User</th>
                         <th>Amount</th>
+                        <th>Method</th>
+                        <th>User Balance</th>
                         <th>Status</th>
                         <th>Requested At</th>
                         <th>Actions</th>
@@ -21,8 +23,13 @@
                     @forelse($withdrawals as $withdrawal)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $withdrawal->user->name ?? 'N/A' }}</td>
-                            <td>{{ number_format($withdrawal->amount, 2) }}</td>
+                            <td>
+                                {{ $withdrawal->user->name ?? 'N/A' }}<br>
+                                <small class="text-muted">{{ $withdrawal->user->email ?? '' }}</small>
+                            </td>
+                            <td>₱{{ number_format($withdrawal->amount, 2) }}</td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $withdrawal->method)) }}</td>
+                            <td>₱{{ number_format($withdrawal->user->account_balance ?? 0, 2) }}</td>
                             <td>
                                 @if($withdrawal->status == 'pending')
                                     <span class="badge bg-warning text-dark">Pending</span>
@@ -37,20 +44,20 @@
                                 @if($withdrawal->status == 'pending')
                                     <form action="{{ route('admin.withdrawals.approve', $withdrawal->id) }}" method="POST" style="display:inline;">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Are you sure you want to approve this withdrawal?')">Approve</button>
                                     </form>
                                     <form action="{{ route('admin.withdrawals.deny', $withdrawal->id) }}" method="POST" style="display:inline;">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-danger">Deny</button>
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to deny this withdrawal?')">Deny</button>
                                     </form>
                                 @else
-                                    <span class="text-muted">No actions</span>
+                                    <span class="text-muted">Processed</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center">No withdrawals found.</td>
+                            <td colspan="8" class="text-center">No withdrawals found.</td>
                         </tr>
                     @endforelse
                 </tbody>

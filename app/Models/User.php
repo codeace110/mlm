@@ -38,6 +38,10 @@ class User extends Authenticatable
         'profile_image',
         'phone',
         'address',
+        'city',
+        'province',
+        'postal_code',
+        'shipping_name',
         'account_balance',
     ];
 

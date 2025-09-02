@@ -30,7 +30,7 @@
                             <!-- Purchase Form -->
                             <div class="mt-4">
                                 <h5>Purchase Package</h5>
-                                <form action="{{ route('packages.purchase', $package) }}" method="POST">
+                                <form action="{{ route('packages.payment', $package) }}" method="GET">
                                     @csrf
                                     <div class="row g-3">
                                         <div class="col-md-4">

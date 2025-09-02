@@ -14,8 +14,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Check if user needs to complete onboarding
-        if (!$user->phone || !$user->address) {
+        // Check if user has completed onboarding (all required fields)
+        if (!$user->phone || !$user->address || !$user->city || !$user->province || !$user->shipping_name) {
             return redirect()->route('onboarding');
         }
 

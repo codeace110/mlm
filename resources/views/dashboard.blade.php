@@ -55,7 +55,7 @@
                           <i class="fa fa-ellipsis-h text-white"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers2">
-                          <li><a class="dropdown-item border-radius-md" href="{{ route('withdrawals.create') }}">Request Withdrawal</a></li>
+                          <li><a class="dropdown-item border-radius-md" href="{{ route('dashboard.payout') }}">Request Withdrawal</a></li>
                           <li><a class="dropdown-item border-radius-md" href="{{ route('earnings.index') }}">View Earnings</a></li>
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Balance History</a></li>
                         </ul>

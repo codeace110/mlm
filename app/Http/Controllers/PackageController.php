@@ -27,10 +27,31 @@ class PackageController extends Controller
         return view('packages.show', compact('package', 'relatedPackages'));
     }
 
+    public function payment(Request $request, Package $package)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1|max:10',
+        ]);
+
+        $quantity = $request->quantity;
+        $totalAmount = $package->price * $quantity;
+
+        return view('packages.payment', compact('package', 'quantity', 'totalAmount'));
+    }
+
     public function purchase(Request $request, Package $package)
     {
         $request->validate([
             'quantity' => 'required|integer|min:1|max:10',
+            'method' => 'required|in:cebuana_lhuillier,mlhuillier,palawan_pawnshop,gcash,paymaya',
+            'shipping_name' => 'required|string|max:255',
+            'shipping_phone' => 'required|string|max:20',
+            'shipping_address' => 'required|string|max:500',
+            'shipping_city' => 'nullable|string|max:100',
+            'shipping_province' => 'nullable|string|max:100',
+            'shipping_postal_code' => 'nullable|string|max:10',
+            'notes' => 'nullable|string|max:500',
+            'terms' => 'required|accepted',
         ]);
 
         $user = Auth::user();
@@ -44,13 +65,46 @@ class PackageController extends Controller
                 ' but only have ₱' . number_format($user->account_balance, 2));
         }
 
-        // Process purchase (in a real app, you'd create an order record)
-        $user->decrement('account_balance', $totalAmount);
+        // Update user's shipping information
+        $user->update([
+            'shipping_name' => $request->shipping_name,
+            'phone' => $request->shipping_phone,
+            'address' => $request->shipping_address,
+            'city' => $request->shipping_city,
+            'province' => $request->shipping_province,
+            'postal_code' => $request->shipping_postal_code,
+        ]);
 
-        // You could create a purchase/order record here
-        // Purchase::create([...]);
+        // Prepare shipping information (use updated user data)
+        $shippingInfo = [
+            'name' => $user->shipping_name,
+            'phone' => $user->phone,
+            'address' => $user->address,
+            'city' => $user->city,
+            'province' => $user->province,
+            'postal_code' => $user->postal_code,
+        ];
+
+        // Prepare account details with shipping and payment info
+        $accountDetails = [
+            'shipping' => $shippingInfo,
+            'payment_method' => $request->method,
+            'notes' => $request->notes ?? '',
+            'special_instructions' => $request->notes ?? '',
+        ];
+
+        // Create package purchase request (balance will be deducted on approval)
+        \App\Models\PackagePurchase::create([
+            'user_id' => $user->id,
+            'package_id' => $package->id,
+            'quantity' => $quantity,
+            'total_amount' => $totalAmount,
+            'method' => $request->method,
+            'account_details' => $accountDetails,
+            'status' => 'pending',
+        ]);
 
         return redirect()->route('packages.index')->with('success',
-            "Successfully purchased {$quantity}x {$package->name} for ₱" . number_format($totalAmount, 2));
+            "Package purchase request submitted successfully! Your request for ₱" . number_format($totalAmount, 2) . " will be reviewed by an admin. You will receive payment instructions via email/phone.");
     }
 }

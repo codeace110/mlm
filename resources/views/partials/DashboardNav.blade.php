@@ -37,7 +37,7 @@
 
           <!-- Product Packages -->
       <li class="nav-item">
-      <a class="nav-link {{ request()->routeIs('dashboard.package*') ? 'active' : '' }}" href="{{ Route('dashboard.package') }}">
+      <a class="nav-link {{ request()->routeIs('packages.*') ? 'active' : '' }}" href="{{ route('packages.index') }}">
         <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
           <!-- Shopping Bag Icon -->
           <svg width="12px" height="12px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000ff">
@@ -70,7 +70,7 @@
       </li>
       <!-- Network -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.network*') ? 'active' : '' }}" href="{{ Route('dashboard.network') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.network*') ? 'active' : '' }}" href="{{ route('dashboard.network') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- 3D Box Icon -->
             <svg width="12px" height="12px" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
@@ -87,28 +87,28 @@
 
 
        <!-- Withdrawal Payout Request -->
+       <li class="nav-item">
+         <a class="nav-link {{ request()->routeIs('dashboard.payout') ? 'active' : '' }}" href="{{ route('dashboard.payout') }}">
+           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+             <!-- Withdrawal Payout Request -->
+             <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
+               <title>Payout</title>
+               <g fill="#FFFFFF" fill-rule="nonzero">
+                 <path class="color-background opacity-6"
+                       d="M43,10.75V3.58C43,1.6 41.4,0 39.4,0H3.6C1.6,0 0,1.6 0,3.58V10.75H43Z"/>
+                 <path class="color-background"
+                       d="M0,16.13V32.25C0,34.23 1.6,35.83 3.6,35.83H39.4C41.4,35.83 43,34.23 43,32.25V16.13H0ZM19.7,26.88H7.17V23.29H19.7V26.88Z"/>
+               </g>
+             </svg>
+           </div>
+           <span class="nav-link-text ms-1">Payout</span>
+         </a>
+       </li>
+ 
+ 
+       <!-- Notifications -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.payout') ? 'active' : '' }}" href="{{ route('dashboard.payout') }}">
-          <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-            <!-- Withdrawal Payout Request -->
-            <svg width="12px" height="12px" viewBox="0 0 43 36" xmlns="http://www.w3.org/2000/svg">
-              <title>Payout</title>
-              <g fill="#FFFFFF" fill-rule="nonzero">
-                <path class="color-background opacity-6"
-                      d="M43,10.75V3.58C43,1.6 41.4,0 39.4,0H3.6C1.6,0 0,1.6 0,3.58V10.75H43Z"/>
-                <path class="color-background"
-                      d="M0,16.13V32.25C0,34.23 1.6,35.83 3.6,35.83H39.4C41.4,35.83 43,34.23 43,32.25V16.13H0ZM19.7,26.88H7.17V23.29H19.7V26.88Z"/>
-              </g>
-            </svg>
-          </div>
-          <span class="nav-link-text ms-1">Payout</span>
-        </a>
-      </li>
-
-
-      <!-- Notifications -->
-      <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('dashboard.notification*') ? 'active' : '' }}" href="{{ Route('dashboard.notification') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.notification*') ? 'active' : '' }}" href="{{ route('dashboard.notification') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- Settings Icon -->
             <svg width="12px" height="12px" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
@@ -191,6 +191,14 @@
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Network</li>
                 @elseif(request()->routeIs('dashboard.notification*'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Notifications</li>
+                @elseif(request()->routeIs('dashboard.payout'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Payout</li>
+                @elseif(request()->routeIs('packages.index'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Packages</li>
+                @elseif(request()->routeIs('packages.show'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Package Details</li>
+                @elseif(request()->routeIs('packages.payment'))
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Payment Method</li>
                 @elseif(request()->routeIs('dashboard.profile'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Profile</li>
                 @else
@@ -209,6 +217,14 @@
                     Network
                 @elseif(request()->routeIs('dashboard.notification*'))
                     Notifications
+                @elseif(request()->routeIs('dashboard.payout'))
+                    Payout
+                @elseif(request()->routeIs('packages.index'))
+                    Packages
+                @elseif(request()->routeIs('packages.show'))
+                    Package Details
+                @elseif(request()->routeIs('packages.payment'))
+                    Payment Method
                 @elseif(request()->routeIs('dashboard.profile'))
                     Profile
                 @else
@@ -226,7 +242,7 @@
           </div>
           <ul class="navbar-nav  justify-content-end">
             <li class="nav-item d-flex align-items-center">
-              <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('dashboard.package') }}" >Browse Package</a>
+              <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('packages.index') }}" >Browse Package</a>
             </li>
             <li class="nav-item d-flex align-items-center">
               <a href="javascript:;" class="nav-link text-body font-weight-bold px-0">
