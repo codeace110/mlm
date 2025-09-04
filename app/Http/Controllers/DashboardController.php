@@ -6,8 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Earning;
 use App\Models\Withdrawal;
-use App\Models\Package;
+use App\Models\ReferralCode;
+use App\Models\BinaryTree;
 use Illuminate\Support\Facades\Auth;
+use App\Services\BinaryTreeService;
 
 class DashboardController extends Controller
 {
@@ -55,11 +57,12 @@ class DashboardController extends Controller
             ->groupBy('type')
             ->get();
 
-        // Get available packages for purchase
-        $availablePackages = Package::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->take(6)
-            ->get();
+        // Get binary tree data
+        $binaryTreeService = new BinaryTreeService();
+        $binaryTreeData = $binaryTreeService->getTreeData($user);
+
+        // Get user's referral codes
+        $referralCodes = ReferralCode::where('assigned_to', $user->id)->get();
 
         return view('dashboard', compact(
             'user',
@@ -73,7 +76,8 @@ class DashboardController extends Controller
             'recentEarnings',
             'networkStats',
             'earningsByType',
-            'availablePackages'
+            'binaryTreeData',
+            'referralCodes'
         ));
     }
 

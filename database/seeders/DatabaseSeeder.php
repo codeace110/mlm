@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
            TestUserSeeder::class,
            EarningsTableSeeder::class,
            WithdrawalsTableSeeder::class,
+           ReferralCodesTableSeeder::class,
+           RecruitsTableSeeder::class,
        ]);
    }
 }

@@ -95,6 +95,26 @@ class User extends Authenticatable
         return $this->hasMany(Withdrawal::class);
     }
 
+    public function referralCodes()
+    {
+        return $this->hasMany(ReferralCode::class, 'assigned_to');
+    }
+
+    public function usedReferralCodes()
+    {
+        return $this->hasMany(ReferralCode::class, 'used_by');
+    }
+
+    public function generatedReferralCodes()
+    {
+        return $this->hasMany(ReferralCode::class, 'generated_by');
+    }
+
+    public function binaryTree()
+    {
+        return $this->hasOne(BinaryTree::class);
+    }
+
     public function totalEarnings()
     {
         return $this->earnings()->sum('amount');

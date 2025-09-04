@@ -199,94 +199,6 @@
         </div>
       </div>
       <div class="row my-4">
-        <div class="col-lg-8 col-md-6 mb-md-0 mb-4">
-      <div class="card">
-        <div class="card-header pb-0">
-          <div class="row">
-            <div class="col-lg-6 col-7">
-              <h6>Available Packages</h6>
-              <p class="text-sm mb-0">
-                <i class="fa fa-shopping-bag text-info" aria-hidden="true"></i>
-                <span class="font-weight-bold ms-1">{{ $availablePackages->count() }} packages</span> available
-              </p>
-            </div>
-            <div class="col-lg-6 col-5 my-auto text-end">
-              <div class="dropdown float-lg-end pe-4">
-                <a class="cursor-pointer" id="dropdownTable" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fa fa-ellipsis-v text-secondary"></i>
-                </a>
-                <ul class="dropdown-menu px-2 py-3 ms-sm-n4 ms-n5" aria-labelledby="dropdownTable">
-                  <li><a class="dropdown-item border-radius-md" href="{{ route('packages.index') }}">View All Packages</a></li>
-                  <li><a class="dropdown-item border-radius-md" href="javascript:;">Package History</a></li>
-                  <li><a class="dropdown-item border-radius-md" href="javascript:;">Purchase Stats</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-body px-0 pb-2">
-          <div class="table-responsive">
-            <table class="table align-items-center mb-0">
-              <thead>
-                <tr>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Package</th>
-                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Description</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Price</th>
-                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                @forelse($availablePackages as $package)
-                <tr>
-                  <td>
-                    <div class="d-flex px-2 py-1">
-                      <div>
-                        @if($package->image)
-                          <img src="{{ asset($package->image) }}" class="avatar avatar-sm me-3" alt="{{ $package->name }}">
-                        @else
-                          <div class="avatar avatar-sm me-3 bg-gradient-primary d-flex align-items-center justify-content-center">
-                            <i class="fa fa-shopping-bag text-white"></i>
-                          </div>
-                        @endif
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="mb-0 text-sm">{{ $package->name }}</h6>
-                        <p class="text-xs text-secondary mb-0">Package #{{ $package->id }}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <p class="text-xs font-weight-bold mb-0">{{ Str::limit($package->description, 50) }}</p>
-                    @if($package->features && is_array($package->features))
-                      <small class="text-muted">{{ count($package->features) }} features included</small>
-                    @endif
-                  </td>
-                  <td class="align-middle text-center text-sm">
-                    <span class="text-xs font-weight-bold text-success">₱{{ number_format($package->price, 2) }}</span>
-                  </td>
-                  <td class="align-middle text-center">
-                    <a href="{{ route('packages.show', $package) }}" class="btn btn-sm btn-outline-primary">
-                      View Details
-                    </a>
-                  </td>
-                </tr>
-                @empty
-                <tr>
-                  <td colspan="4" class="text-center py-4">
-                    <div class="d-flex flex-column align-items-center">
-                      <i class="fa fa-shopping-bag fa-2x text-muted mb-3"></i>
-                      <h6 class="text-muted">No packages available</h6>
-                      <p class="text-xs text-muted">Check back later for new packages</p>
-                    </div>
-                  </td>
-                </tr>
-                @endforelse
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
 
 
         <div class="col-lg-4 col-md-6">
@@ -389,8 +301,8 @@
                <div class="card-body position-relative z-index-1 d-flex flex-column h-100 p-3">
                  <h5 class="text-white font-weight-bolder mb-4 pt-2">Build Your Network Empire</h5>
                  <p class="text-white">Join thousands of successful entrepreneurs building passive income through our multi-level marketing platform. Start your journey to financial freedom today.</p>
-                 <a class="text-white text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="{{ route('packages.index') }}">
-                   Explore Packages
+                 <a class="text-white text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="javascript:;">
+                   Build Your Network
                    <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
                  </a>
                </div>

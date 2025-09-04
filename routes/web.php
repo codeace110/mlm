@@ -6,10 +6,8 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\EarningsController;
 use App\Http\Controllers\WithdrawalsController;
-use App\Http\Controllers\PackageController as UserPackageController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\BonusRuleController;
 use App\Http\Controllers\Admin\NetworkController;
 use App\Http\Controllers\Admin\EarningController;
@@ -55,12 +53,6 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/ajax/withdrawals/stats', [WithdrawalsController::class, 'ajaxStats'])->name('ajax.withdrawals.stats');
     Route::get('/ajax/withdrawals/recent', [WithdrawalsController::class, 'ajaxRecent'])->name('ajax.withdrawals.recent');
 
-    // Packages
-    Route::get('/packages', [UserPackageController::class, 'index'])->name('packages.index');
-    Route::get('/packages/{package}', [UserPackageController::class, 'show'])->name('packages.show');
-    Route::get('/packages/{package}/payment', [UserPackageController::class, 'payment'])->name('packages.payment');
-    Route::post('/packages/{package}/purchase', [UserPackageController::class, 'purchase'])->name('packages.purchase');
-
     // Legacy routes (keeping for compatibility)
     Route::get('/dashboard/referrals', [ReferralController::class, 'index'])->name('dashboard.referrals');
 
@@ -75,10 +67,6 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/dashboard/notification', function () {
         return view('DashboardNotification');
     })->name('dashboard.notification');
-
-    Route::get('/dashboard/package', function () {
-        return view('Dashboardpackage');
-    })->name('dashboard.package');
 });
 
 // Admin dashboard Routes
@@ -90,9 +78,6 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('users', UserController::class);
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/deny', [UserController::class, 'deny'])->name('users.deny');
-        Route::post('/package-purchases/{packagePurchase}/approve', [UserController::class, 'approvePackagePurchase'])->name('package-purchases.approve');
-        Route::post('/package-purchases/{packagePurchase}/deny', [UserController::class, 'denyPackagePurchase'])->name('package-purchases.deny');
-        Route::resource('packages', PackageController::class);
         Route::resource('bonus_rules', BonusRuleController::class);
         Route::post('/bonus_rules/{rule}/activate', [BonusRuleController::class, 'activate'])->name('bonus_rules.activate');
         Route::post('/bonus_rules/{rule}/deactivate', [BonusRuleController::class, 'deactivate'])->name('bonus_rules.deactivate');

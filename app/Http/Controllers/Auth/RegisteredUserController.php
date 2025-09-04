@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Services\ReferralCodeService;
+use App\Services\BinaryTreeService;
 
 class RegisteredUserController extends Controller
 {
@@ -33,29 +35,29 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
-            'referral_code' => 'nullable|string|exists:users,referral_code',
+            'referral_code' => 'required|string',
         ]);
 
+        $referralCodeService = new ReferralCodeService();
+        $sponsor = $referralCodeService->validateAndUseCode($request->referral_code); // Validate first
 
-        $sponsorId = null;
-
-        if ($request->filled('referral_code')) {
-            $sponsor = User::where('referral_code', $request->referral_code)->first();
-
-            if (!$sponsor) {
-                // If referral is required
-                return back()->withErrors(['referral_code' => 'Invalid referral code'])->withInput();
-            }
-
-            $sponsorId = $sponsor->id;
+        if (!$sponsor) {
+            return back()->withErrors(['referral_code' => 'Invalid or used referral code'])->withInput();
         }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'sponsor_id' => $sponsorId, // save referral
+            'sponsor_id' => $sponsor->id,
         ]);
+
+        // Now mark as used
+        $referralCodeService->validateAndUseCode($request->referral_code, $user);
+
+        // Place in binary tree
+        $binaryTreeService = new BinaryTreeService();
+        $binaryTreeService->placeUserInTree($user, $sponsor);
 
         event(new Registered($user));
         Auth::login($user);
