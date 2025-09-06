@@ -39,4 +39,17 @@ class UserController extends Controller
         return view('admin.users.show', compact('user'));
     }
 
+    public function generateReferralCode(User $user)
+    {
+        $code = \App\Models\ReferralCode::create([
+            'code' => strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)),
+            'assigned_to' => $user->id,
+            'generated_by' => auth()->id(),
+            'status' => 'available',
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        return back()->with('success', 'Referral code generated: ' . $code->code);
+    }
+
 }

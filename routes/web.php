@@ -78,6 +78,7 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('users', UserController::class);
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/deny', [UserController::class, 'deny'])->name('users.deny');
+        Route::post('/users/{user}/generate-referral-code', [UserController::class, 'generateReferralCode'])->name('users.generate-referral-code');
         Route::resource('bonus_rules', BonusRuleController::class);
         Route::post('/bonus_rules/{rule}/activate', [BonusRuleController::class, 'activate'])->name('bonus_rules.activate');
         Route::post('/bonus_rules/{rule}/deactivate', [BonusRuleController::class, 'deactivate'])->name('bonus_rules.deactivate');
