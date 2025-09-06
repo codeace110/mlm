@@ -64,20 +64,40 @@ class TestUserSeeder extends Seeder
     public function run()
     {
         // Create a test user with account balance
-        $testUser = User::create([
-            'name' => $this->generateUniqueName(),
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-            'referral_code' => 'TEST001',
-            'sponsor_id' => null, // Root user
-            'placement_side' => null,
-            'is_admin' => false,
-            'status' => 'approved',
-            'level' => 0,
-            'account_balance' => 5000.00, // Add account balance
-            'phone' => '+63 912 345 6789',
-            'address' => '123 Test Street, Test City, Philippines',
-        ]);
+        $testUser = User::updateOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => $this->generateUniqueName(),
+                'password' => bcrypt('password'),
+                'referral_code' => 'TEST001',
+                'sponsor_id' => null, // Root user
+                'placement_side' => null,
+                'is_admin' => false,
+                'status' => 'approved',
+                'level' => 0,
+                'account_balance' => 5000.00, // Add account balance
+                'phone' => '+63 912 345 6789',
+                'address' => '123 Test Street, Test City, Philippines',
+            ]
+        );
+
+        // Create an admin user
+        $adminUser = User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => bcrypt('password'),
+                'referral_code' => 'ADMIN001',
+                'sponsor_id' => null,
+                'placement_side' => null,
+                'is_admin' => true,
+                'status' => 'approved',
+                'level' => 0,
+                'account_balance' => 0.00,
+                'phone' => '+63 912 345 6789',
+                'address' => 'Admin Address, Admin City, Philippines',
+            ]
+        );
 
         // Create 8 direct referrals for the test user
         $directReferrals = [];
@@ -163,6 +183,7 @@ class TestUserSeeder extends Seeder
 
         $this->command->info('Test user created with email: test@example.com and password: password');
         $this->command->info('Test user has account balance: ₱5,000.00');
+        $this->command->info('Admin user created with email: admin@example.com and password: password');
         $this->command->info('Created 8 direct referrals, 32 level 2 referrals, and 3 pending referrals');
     }
 }
