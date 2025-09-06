@@ -13,19 +13,37 @@ class BinaryTreeService
     public function placeUserInTree(User $newUser, User $sponsor)
     {
         // Get or create binary tree for sponsor
-        $tree = BinaryTree::firstOrCreate(['user_id' => $sponsor->id]);
+        $tree = BinaryTree::where('user_id', $sponsor->id)->first();
+        if (!$tree) {
+            $tree = BinaryTree::create([
+                'user_id' => $sponsor->id,
+                'left_volume' => 0,
+                'right_volume' => 0,
+                'carryover_left' => 0,
+                'carryover_right' => 0,
+            ]);
+        }
 
         // Determine placement side: default left first
         $side = $this->determinePlacementSide($tree);
 
         if ($side === 'left') {
-            $tree->left_child_id = $newUser->id;
-            $tree->left_volume = (float) $tree->left_volume + $this->volumePerRecruit;
-            $tree->save();
+            $tree->update([
+                'left_child_id' => $newUser->id,
+                'left_volume' => (float) $tree->left_volume + $this->volumePerRecruit,
+                'right_volume' => $tree->right_volume,
+                'carryover_left' => $tree->carryover_left,
+                'carryover_right' => $tree->carryover_right,
+            ]);
         } else {
-            $tree->right_child_id = $newUser->id;
-            $tree->right_volume = (float) $tree->right_volume + $this->volumePerRecruit;
-            $tree->save();
+            $tree->update([
+                'left_child_id' => $tree->left_child_id,
+                'left_volume' => $tree->left_volume,
+                'right_child_id' => $newUser->id,
+                'right_volume' => (float) $tree->right_volume + $this->volumePerRecruit,
+                'carryover_left' => $tree->carryover_left,
+                'carryover_right' => $tree->carryover_right,
+            ]);
         }
 
         // Update placement_side in user
