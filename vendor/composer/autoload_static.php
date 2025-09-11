@@ -612,6 +612,7 @@ class ComposerStaticInitfe33f98a750b8c5a51b30c78bd3fab21
         'App\\Models\\Earning' => __DIR__ . '/../..' . '/app/Models/Earning.php',
         'App\\Models\\Referral' => __DIR__ . '/../..' . '/app/Models/Referral.php',
         'App\\Models\\ReferralCode' => __DIR__ . '/../..' . '/app/Models/ReferralCode.php',
+        'App\\Models\\TestUser' => __DIR__ . '/../..' . '/app/Models/TestUser.php',
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
         'App\\Models\\Withdrawal' => __DIR__ . '/../..' . '/app/Models/Withdrawal.php',
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',

@@ -40,14 +40,16 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-                <!-- Referral Code (optional or required) -->
+                <!-- Referral Code (required) -->
         <div class="mt-4">
             <x-input-label for="referral_code" :value="__('Referral Code')" />
 
             <x-text-input id="referral_code" class="block mt-1 w-full"
                             type="text"
                             name="referral_code"
-                            :value="old('referral_code')" />
+                            :value="old('referral_code')"
+                            required
+                            autocomplete="referral_code" />
 
             <x-input-error :messages="$errors->get('referral_code')" class="mt-2" />
         </div>

@@ -23,16 +23,24 @@ class BalancerService
         $leftTotal = $tree->left_volume + $tree->carryover_left;
         $rightTotal = $tree->right_volume + $tree->carryover_right;
 
-        // Determine mode: for now, hardcode to 1:1
-        $mode = '1:1'; // Can be configurable
+        // Determine mode from user configuration
+        $mode = $user->balancing_mode ?? '1:1';
 
         $pairs = 0;
+        $leftMultiplier = 1;
+        $rightMultiplier = 1;
 
         if ($mode === '1:1') {
+            $leftMultiplier = 1;
+            $rightMultiplier = 1;
             $pairs = min($leftTotal, $rightTotal) / $this->pairValue;
         } elseif ($mode === '2:1') {
+            $leftMultiplier = 2;
+            $rightMultiplier = 1;
             $pairs = min($leftTotal / 2, $rightTotal) / $this->pairValue;
         } elseif ($mode === '3:1') {
+            $leftMultiplier = 3;
+            $rightMultiplier = 1;
             $pairs = min($leftTotal / 3, $rightTotal) / $this->pairValue;
         }
 
@@ -47,29 +55,25 @@ class BalancerService
                 'user_id' => $user->id,
                 'amount' => $commission,
                 'type' => 'binary_pair',
-                'description' => "Binary pair commission: {$pairs} pairs",
+                'description' => "Binary pair commission ({$mode}): {$pairs} pairs",
             ]);
 
-            // Update volumes
-            if ($mode === '1:1') {
-                $tree->left_volume = max(0, $leftTotal - $pairs * $this->pairValue);
-                $tree->right_volume = max(0, $rightTotal - $pairs * $this->pairValue);
-            } elseif ($mode === '2:1') {
-                $tree->left_volume = max(0, $leftTotal - $pairs * $this->pairValue * 2);
-                $tree->right_volume = max(0, $rightTotal - $pairs * $this->pairValue);
-            } elseif ($mode === '3:1') {
-                $tree->left_volume = max(0, $leftTotal - $pairs * $this->pairValue * 3);
-                $tree->right_volume = max(0, $rightTotal - $pairs * $this->pairValue);
-            }
+            // Deduct paired volumes
+            $deductLeft = $pairs * $this->pairValue * $leftMultiplier;
+            $deductRight = $pairs * $this->pairValue * $rightMultiplier;
 
-            // Store carryover
-            $tree->carryover_left = max(0, $leftTotal - $pairs * $this->pairValue * ($mode === '1:1' ? 1 : ($mode === '2:1' ? 2 : 3)));
-            $tree->carryover_right = max(0, $rightTotal - $pairs * $this->pairValue);
+            // Update volumes to remainders (carryover now included in volumes)
+            $tree->left_volume = max(0, $leftTotal - $deductLeft);
+            $tree->right_volume = max(0, $rightTotal - $deductRight);
+
+            // Reset carryovers since remainders are now in volumes
+            $tree->carryover_left = 0;
+            $tree->carryover_right = 0;
 
             $tree->save();
         }
 
-        // Process upline
+        // Process upline recursively
         if ($user->sponsor) {
             $this->processPairs($user->sponsor);
         }

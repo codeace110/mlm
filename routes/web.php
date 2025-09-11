@@ -40,8 +40,6 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 
     // Referrals and Network
     Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
-    Route::get('/network', [ReferralController::class, 'network'])->name('network.index');
-    Route::get('/ajax/network', [ReferralController::class, 'ajaxNetwork'])->name('ajax.network');
 
     // Earnings
     Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
@@ -82,6 +80,7 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('bonus_rules', BonusRuleController::class);
         Route::post('/bonus_rules/{rule}/activate', [BonusRuleController::class, 'activate'])->name('bonus_rules.activate');
         Route::post('/bonus_rules/{rule}/deactivate', [BonusRuleController::class, 'deactivate'])->name('bonus_rules.deactivate');
+        Route::resource('referral_codes', ReferralCodeController::class);
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');

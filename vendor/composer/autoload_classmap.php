@@ -50,6 +50,7 @@ return array(
     'App\\Models\\Earning' => $baseDir . '/app/Models/Earning.php',
     'App\\Models\\Referral' => $baseDir . '/app/Models/Referral.php',
     'App\\Models\\ReferralCode' => $baseDir . '/app/Models/ReferralCode.php',
+    'App\\Models\\TestUser' => $baseDir . '/app/Models/TestUser.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
     'App\\Models\\Withdrawal' => $baseDir . '/app/Models/Withdrawal.php',
     'App\\Providers\\AppServiceProvider' => $baseDir . '/app/Providers/AppServiceProvider.php',

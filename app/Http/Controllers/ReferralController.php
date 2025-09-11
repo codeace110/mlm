@@ -31,30 +31,22 @@ class ReferralController extends Controller
         return view('referrals', compact('directReferrals', 'networkStats', 'recentReferrals'));
     }
 
-    public function network()
+    public function codes()
     {
         $user = Auth::user();
 
-        // Build network tree
-        $networkTree = $this->buildNetworkTree($user);
+        // Get user's assigned referral codes
+        $referralCodes = $user->referralCodes()->with('usedBy')->paginate(20);
 
-        return view('network', compact('networkTree'));
+        // Stats
+        $totalCodes = $user->referralCodes()->count();
+        $assignedCodes = $user->referralCodes()->whereNotNull('assigned_to')->count();
+        $usedCodes = $user->referralCodes()->whereNotNull('used_by')->count();
+
+        return view('dashboard.referral-codes', compact('referralCodes', 'totalCodes', 'assignedCodes', 'usedCodes'));
     }
 
-    public function ajaxNetwork(Request $request): JsonResponse
-    {
-        $user = Auth::user();
-        $level = $request->get('level', 1);
-        $maxLevel = $request->get('max_level', 3);
 
-        $networkData = $this->getNetworkByLevel($user, $level, $maxLevel);
-
-        return response()->json([
-            'success' => true,
-            'data' => $networkData,
-            'level' => $level
-        ]);
-    }
 
     private function getNetworkStatistics($user)
     {
@@ -90,51 +82,5 @@ class ReferralController extends Controller
         ];
     }
 
-    private function buildNetworkTree($user, $depth = 0, $maxDepth = 3)
-    {
-        if ($depth >= $maxDepth) {
-            return null;
-        }
 
-        $children = User::where('sponsor_id', $user->id)
-            ->with('earnings')
-            ->get()
-            ->map(function($child) use ($depth, $maxDepth) {
-                return $this->buildNetworkTree($child, $depth + 1, $maxDepth);
-            })
-            ->filter()
-            ->values();
-
-        $totalEarnings = $user->earnings->sum('amount');
-
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'level' => $depth + 1,
-            'earnings' => $totalEarnings,
-            'children' => $children,
-            'created_at' => $user->created_at->format('M d, Y')
-        ];
-    }
-
-    private function getNetworkByLevel($user, $level, $maxLevel)
-    {
-        $users = collect([$user]);
-
-        for ($i = 1; $i <= $level; $i++) {
-            $userIds = $users->pluck('id');
-            $users = User::whereIn('sponsor_id', $userIds)->get();
-        }
-
-        return $users->map(function($user) {
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'earnings' => $user->earnings->sum('amount'),
-                'created_at' => $user->created_at->format('M d, Y')
-            ];
-        });
-    }
 }

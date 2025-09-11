@@ -84,9 +84,7 @@ class DashboardController extends Controller
     public function network()
     {
         $user = Auth::user();
-
-        // Build network tree
-        $networkTree = $this->buildNetworkTree($user);
+        $networkTree = $this->buildBinaryTree($user, 0, 10);
 
         return view('DashboardNetwork', compact('networkTree'));
     }
@@ -107,37 +105,51 @@ class DashboardController extends Controller
         ];
     }
 
-    private function buildNetworkTree($user, $depth = 0, $maxDepth = 4)
+    private function buildBinaryTree($user, $depth = 0, $maxDepth = 3)
     {
         if ($depth >= $maxDepth) {
             return null;
         }
 
-        $children = User::where('sponsor_id', $user->id)
-            ->with('earnings')
-            ->get()
-            ->map(function($child) use ($depth, $maxDepth) {
-                $childData = $this->buildNetworkTree($child, $depth + 1, $maxDepth);
-                if ($childData) {
-                    $childData['placement_side'] = $child->placement_side;
-                }
-                return $childData;
-            })
-            ->filter()
-            ->values();
+        $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
+        $left_volume = $binaryTree ? $binaryTree->left_volume : 0;
+        $right_volume = $binaryTree ? $binaryTree->right_volume : 0;
+        $left_child_id = $binaryTree ? $binaryTree->left_child_id : null;
+        $right_child_id = $binaryTree ? $binaryTree->right_child_id : null;
 
-        $totalEarnings = $user->earnings->sum('amount');
-
-        return [
-            'id' => $user->id,
+        $node = [
             'name' => $user->name,
-            'email' => $user->email,
+            'id' => $user->id,
             'level' => $depth + 1,
-            'earnings' => $totalEarnings,
-            'children' => $children,
-            'placement_side' => $user->placement_side,
-            'created_at' => $user->created_at->format('M d, Y')
+            'left_volume' => $left_volume,
+            'right_volume' => $right_volume,
+            'profile_image' => $user->profile_image,
+            'children' => []
         ];
+
+        // Left child
+        if ($left_child_id) {
+            $leftUser = \App\Models\User::find($left_child_id);
+            if ($leftUser) {
+                $leftChild = $this->buildBinaryTree($leftUser, $depth + 1, $maxDepth);
+                if ($leftChild) {
+                    $node['children'][] = $leftChild;
+                }
+            }
+        }
+
+        // Right child
+        if ($right_child_id) {
+            $rightUser = \App\Models\User::find($right_child_id);
+            if ($rightUser) {
+                $rightChild = $this->buildBinaryTree($rightUser, $depth + 1, $maxDepth);
+                if ($rightChild) {
+                    $node['children'][] = $rightChild;
+                }
+            }
+        }
+
+        return $node;
     }
 
     public function ajaxChartData()

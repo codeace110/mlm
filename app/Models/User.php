@@ -35,6 +35,7 @@ class User extends Authenticatable
         'is_admin',
         'status',
         'level',
+        'balancing_mode',
         'profile_image',
         'phone',
         'address',
@@ -60,6 +61,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'is_admin' => 'boolean',
         'account_balance' => 'decimal:2',
+        'balancing_mode' => 'string',
     ];
 
     /**
