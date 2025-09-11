@@ -107,7 +107,7 @@ class DashboardController extends Controller
         ];
     }
 
-    private function buildNetworkTree($user, $depth = 0, $maxDepth = 3)
+    private function buildNetworkTree($user, $depth = 0, $maxDepth = 4)
     {
         if ($depth >= $maxDepth) {
             return null;
@@ -117,7 +117,11 @@ class DashboardController extends Controller
             ->with('earnings')
             ->get()
             ->map(function($child) use ($depth, $maxDepth) {
-                return $this->buildNetworkTree($child, $depth + 1, $maxDepth);
+                $childData = $this->buildNetworkTree($child, $depth + 1, $maxDepth);
+                if ($childData) {
+                    $childData['placement_side'] = $child->placement_side;
+                }
+                return $childData;
             })
             ->filter()
             ->values();
@@ -131,6 +135,7 @@ class DashboardController extends Controller
             'level' => $depth + 1,
             'earnings' => $totalEarnings,
             'children' => $children,
+            'placement_side' => $user->placement_side,
             'created_at' => $user->created_at->format('M d, Y')
         ];
     }
