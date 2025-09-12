@@ -211,6 +211,29 @@
               </p>
             </div>
             <div class="card-body p-3">
+              <!-- Earnings by Type -->
+              <div class="mb-4">
+                <h6 class="text-sm font-weight-bold mb-3">Earnings Breakdown</h6>
+                @php
+                  $earningsByType = \App\Models\Earning::where('user_id', auth()->id())
+                      ->selectRaw('type, SUM(amount) as total')
+                      ->groupBy('type')
+                      ->get();
+                @endphp
+                @forelse($earningsByType as $earning)
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-xs font-weight-bold text-dark">
+                    {{ ucwords(str_replace('_', ' ', $earning->type)) }}
+                  </span>
+                  <span class="text-xs font-weight-bold text-success">
+                    ₱{{ number_format($earning->total, 2) }}
+                  </span>
+                </div>
+                @empty
+                <p class="text-xs text-muted mb-0">No earnings yet</p>
+                @endforelse
+              </div>
+
               <div class="timeline timeline-one-side">
                 @forelse($recentReferrals as $referral)
                 <div class="timeline-block mb-3">
@@ -240,7 +263,7 @@
                     <i class="ni ni-money-coins text-info text-gradient"></i>
                   </span>
                   <div class="timeline-content">
-                    <h6 class="text-dark text-sm font-weight-bold mb-0">₱{{ number_format($earning->amount, 2) }} - {{ $earning->type }}</h6>
+                    <h6 class="text-dark text-sm font-weight-bold mb-0">₱{{ number_format($earning->amount, 2) }} - {{ ucwords(str_replace('_', ' ', $earning->type)) }}</h6>
                     <p class="text-secondary font-weight-bold text-xs mt-1 mb-0">{{ $earning->created_at->format('d M H:i') }}</p>
                   </div>
                 </div>

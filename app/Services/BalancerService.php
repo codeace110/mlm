@@ -5,77 +5,94 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\BinaryTree;
 use App\Models\Earning;
+use App\Models\BonusSettings;
 
 class BalancerService
 {
-    protected $pairValue = 100; // ₱100 per pair
-    protected $commissionPercentage = 10; // 10% commission
-
     public function processPairs(User $user)
     {
         $tree = BinaryTree::where('user_id', $user->id)->first();
-
         if (!$tree) {
             return;
         }
 
-        // Get current volumes including carryover
-        $leftTotal = $tree->left_volume + $tree->carryover_left;
-        $rightTotal = $tree->right_volume + $tree->carryover_right;
-
-        // Determine mode from user configuration
-        $mode = $user->balancing_mode ?? '1:1';
-
-        $pairs = 0;
-        $leftMultiplier = 1;
-        $rightMultiplier = 1;
-
-        if ($mode === '1:1') {
-            $leftMultiplier = 1;
-            $rightMultiplier = 1;
-            $pairs = min($leftTotal, $rightTotal) / $this->pairValue;
-        } elseif ($mode === '2:1') {
-            $leftMultiplier = 2;
-            $rightMultiplier = 1;
-            $pairs = min($leftTotal / 2, $rightTotal) / $this->pairValue;
-        } elseif ($mode === '3:1') {
-            $leftMultiplier = 3;
-            $rightMultiplier = 1;
-            $pairs = min($leftTotal / 3, $rightTotal) / $this->pairValue;
+        $settings = BonusSettings::first();
+        if (!$settings) {
+            return;
         }
 
-        if ($pairs > 0) {
-            $pairs = floor($pairs);
+        $pairBonus = $settings->pair_bonus_amount;
+        $ratio = $this->parseRatio($settings->balancer_ratio);
 
-            // Calculate commission
-            $commission = $pairs * $this->pairValue * ($this->commissionPercentage / 100);
+        $pairs = $this->calculatePairs($tree->left_volume, $tree->right_volume, $ratio);
+        $bonusAmount = $pairs * $pairBonus;
 
-            // Create earning
+        if ($bonusAmount > 0) {
             Earning::create([
                 'user_id' => $user->id,
-                'amount' => $commission,
-                'type' => 'binary_pair',
-                'description' => "Binary pair commission ({$mode}): {$pairs} pairs",
+                'amount' => $bonusAmount,
+                'type' => 'pair',
+                'description' => "Pair bonus for {$pairs} pairs with {$settings->balancer_ratio} balancer",
+                'status' => 'pending',
             ]);
 
-            // Deduct paired volumes
-            $deductLeft = $pairs * $this->pairValue * $leftMultiplier;
-            $deductRight = $pairs * $this->pairValue * $rightMultiplier;
+            // Trigger matching bonus for uplines
+            $this->awardMatchingBonus($user, $bonusAmount);
 
-            // Update volumes to remainders (carryover now included in volumes)
-            $tree->left_volume = max(0, $leftTotal - $deductLeft);
-            $tree->right_volume = max(0, $rightTotal - $deductRight);
+            // Update volumes
+            $leftUsed = min($tree->left_volume, $pairs * $ratio['left']);
+            $rightUsed = min($tree->right_volume, $pairs * $ratio['right']);
 
-            // Reset carryovers since remainders are now in volumes
-            $tree->carryover_left = 0;
-            $tree->carryover_right = 0;
+            $tree->update([
+                'left_volume' => $tree->left_volume - $leftUsed,
+                'right_volume' => $tree->right_volume - $rightUsed,
+            ]);
 
+            // Carryover is the remaining unpaired
+            $tree->carryover_left = $tree->left_volume;
+            $tree->carryover_right = $tree->right_volume;
             $tree->save();
         }
+    }
 
-        // Process upline recursively
-        if ($user->sponsor) {
-            $this->processPairs($user->sponsor);
+    private function parseRatio(string $ratioStr): array
+    {
+        $parts = explode(':', $ratioStr);
+        return ['left' => (int) $parts[0], 'right' => (int) $parts[1]];
+    }
+
+    private function calculatePairs(float $left, float $right, array $ratio): int
+    {
+        $pairs = min(floor($left / $ratio['left']), floor($right / $ratio['right']));
+        return $pairs;
+    }
+
+    private function awardMatchingBonus(User $user, float $pairAmount)
+    {
+        $settings = BonusSettings::first();
+        if (!$settings) {
+            return;
+        }
+
+        $matchingPercent = $settings->matching_bonus_percent;
+        $matchingAmount = $pairAmount * ($matchingPercent / 100);
+
+        $current = $user;
+        while ($current->sponsor_id) {
+            $upline = User::find($current->sponsor_id);
+            if (!$upline) {
+                break;
+            }
+
+            Earning::create([
+                'user_id' => $upline->id,
+                'amount' => $matchingAmount,
+                'type' => 'matching',
+                'description' => "Matching bonus for downline {$user->name}'s pair earnings",
+                'status' => 'pending',
+            ]);
+
+            $current = $upline;
         }
     }
 }

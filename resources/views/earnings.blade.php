@@ -58,10 +58,9 @@
                             <div class="col-md-3">
                                 <select name="type" class="form-select form-select-sm">
                                     <option value="">All Types</option>
-                                    <option value="direct_referral" {{ request('type') === 'direct_referral' ? 'selected' : '' }}>Direct Referral</option>
-                                    <option value="level_bonus" {{ request('type') === 'level_bonus' ? 'selected' : '' }}>Level Bonus</option>
-                                    <option value="matching_bonus" {{ request('type') === 'matching_bonus' ? 'selected' : '' }}>Matching Bonus</option>
-                                    <option value="leadership_bonus" {{ request('type') === 'leadership_bonus' ? 'selected' : '' }}>Leadership Bonus</option>
+                                    <option value="direct" {{ request('type') === 'direct' ? 'selected' : '' }}>Direct Referral</option>
+                                    <option value="pair" {{ request('type') === 'pair' ? 'selected' : '' }}>Pair Bonus</option>
+                                    <option value="matching" {{ request('type') === 'matching' ? 'selected' : '' }}>Matching Bonus</option>
                                 </select>
                             </div>
                             <div class="col-md-3">

@@ -124,7 +124,7 @@ class DashboardController extends Controller
             'left_volume' => $left_volume,
             'right_volume' => $right_volume,
             'profile_image' => $user->profile_image,
-            'children' => []
+            'children' => [null, null] // Initialize with null placeholders for left and right
         ];
 
         // Left child
@@ -133,7 +133,7 @@ class DashboardController extends Controller
             if ($leftUser) {
                 $leftChild = $this->buildBinaryTree($leftUser, $depth + 1, $maxDepth);
                 if ($leftChild) {
-                    $node['children'][] = $leftChild;
+                    $node['children'][0] = $leftChild; // Left child at index 0
                 }
             }
         }
@@ -144,7 +144,7 @@ class DashboardController extends Controller
             if ($rightUser) {
                 $rightChild = $this->buildBinaryTree($rightUser, $depth + 1, $maxDepth);
                 if ($rightChild) {
-                    $node['children'][] = $rightChild;
+                    $node['children'][1] = $rightChild; // Right child at index 1
                 }
             }
         }

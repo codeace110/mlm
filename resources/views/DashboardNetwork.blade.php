@@ -338,14 +338,21 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
         ctx.font = '9px Arial';
         ctx.fillText('L:' + node.left_volume + ' R:' + node.right_volume, x, y + nodeRadius + 28);
     } else {
-        // placeholder slot
+        // Empty placeholder node
         ctx.beginPath();
         ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ccc';
+        ctx.fillStyle = '#f0f0f0'; // Light gray background
         ctx.fill();
-        ctx.strokeStyle = '#999';
+        ctx.strokeStyle = '#ccc'; // Gray border
+        ctx.lineWidth = 2;
         ctx.stroke();
-        return;
+
+        // Draw "Empty" text
+        ctx.fillStyle = '#999'; // Gray text
+        ctx.font = 'bold 10px Arial';
+        ctx.fillText('Empty', x, y + 4);
+
+        return; // Don't draw children for empty nodes
     }
 
     // --- LEFT child ---
@@ -357,13 +364,18 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
         leftX = centerX - margin - nodeRadius;
     }
 
-    if (node.children && node.children[0]) {
+    // Always draw left position, even if empty
+    if (depth < maxDepth) {
+        // Draw connecting line
         ctx.beginPath();
         ctx.moveTo(x, y + nodeRadius);
         ctx.lineTo(leftX, leftY - nodeRadius);
         ctx.strokeStyle = '#999';
         ctx.stroke();
-        drawNode(node.children[0], leftX, leftY, depth + 1, maxDepth,
+
+        // Draw left child (or empty placeholder)
+        const leftChild = (node.children && node.children[0]) ? node.children[0] : null;
+        drawNode(leftChild, leftX, leftY, depth + 1, maxDepth,
                  ctx, nodeRadius, vSpacing, canvasWidth, margin, centerX);
     }
 
@@ -376,13 +388,18 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
         rightX = centerX + margin + nodeRadius;
     }
 
-    if (node.children && node.children[1]) {
+    // Always draw right position, even if empty
+    if (depth < maxDepth) {
+        // Draw connecting line
         ctx.beginPath();
         ctx.moveTo(x, y + nodeRadius);
         ctx.lineTo(rightX, rightY - nodeRadius);
         ctx.strokeStyle = '#999';
         ctx.stroke();
-        drawNode(node.children[1], rightX, rightY, depth + 1, maxDepth,
+
+        // Draw right child (or empty placeholder)
+        const rightChild = (node.children && node.children[1]) ? node.children[1] : null;
+        drawNode(rightChild, rightX, rightY, depth + 1, maxDepth,
                  ctx, nodeRadius, vSpacing, canvasWidth, margin, centerX);
     }
 }

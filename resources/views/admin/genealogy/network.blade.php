@@ -108,6 +108,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr("fill", "#666")
             .text(d => `(L:${d.data.left_volume}, R:${d.data.right_volume})`);
 
+        nodeEnter.append("text")
+            .attr("dy", 50)
+            .attr("x", 0)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "7px")
+            .attr("fill", "#999")
+            .text(d => d.data.carryover_left || d.data.carryover_right ?
+                `Carryover: L:${d.data.carryover_left || 0}, R:${d.data.carryover_right || 0}` : '');
+
         const nodeUpdate = nodes.merge(nodeEnter);
         nodeUpdate.transition()
             .duration(750)
@@ -127,6 +136,12 @@ document.addEventListener('DOMContentLoaded', function() {
         nodeUpdate.select(".node-avatar")
             .attr("href", d => d.data.profile_image ? `images/profiles/${d.data.profile_image}` : null)
             .style("opacity", d => d.data.profile_image ? 1 : 0);
+
+        // Update carryover text
+        nodeUpdate.selectAll("text:nth-child(4)")
+            .text(d => d.data.carryover_left || d.data.carryover_right ?
+                `Carryover: L:${d.data.carryover_left || 0}, R:${d.data.carryover_right || 0}` : '');
+
         nodes.exit().transition()
             .duration(750)
             .attr("transform", d => `translate(${source.y},${source.x})`)

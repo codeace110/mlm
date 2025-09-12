@@ -9,6 +9,7 @@ use App\Http\Controllers\WithdrawalsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BonusRuleController;
+use App\Http\Controllers\Admin\BonusSettingsController;
 use App\Http\Controllers\Admin\NetworkController;
 use App\Http\Controllers\Admin\EarningController;
 use App\Http\Controllers\Admin\WithdrawalController;
@@ -80,6 +81,8 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('bonus_rules', BonusRuleController::class);
         Route::post('/bonus_rules/{rule}/activate', [BonusRuleController::class, 'activate'])->name('bonus_rules.activate');
         Route::post('/bonus_rules/{rule}/deactivate', [BonusRuleController::class, 'deactivate'])->name('bonus_rules.deactivate');
+        Route::get('/bonus-settings', [BonusSettingsController::class, 'index'])->name('bonus_settings.index');
+        Route::put('/bonus-settings', [BonusSettingsController::class, 'update'])->name('bonus_settings.update');
         Route::resource('referral_codes', ReferralCodeController::class);
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
