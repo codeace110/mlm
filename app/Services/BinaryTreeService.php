@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\BinaryTree;
 use App\Models\Earning;
 use App\Models\BonusSettings;
+use App\Services\BalancerService;
+use App\Services\NotificationService;
 
 class BinaryTreeService
 {
@@ -202,13 +204,17 @@ class BinaryTreeService
         $directPercent = $settings->direct_bonus_percent;
         $bonusAmount = $packageValue * ($directPercent / 100);
 
-        Earning::create([
+        $earning = Earning::create([
             'user_id' => $sponsor->id,
             'amount' => $bonusAmount,
             'type' => 'direct',
             'description' => "Direct referral bonus for recruiting {$newUser->name}",
             'status' => 'pending',
         ]);
+
+        // Create notification for the sponsor
+        $notificationService = new NotificationService();
+        $notificationService->notifyEarnings($sponsor, $earning);
     }
 
     public function getTreeData(User $user, int $levels = 3)

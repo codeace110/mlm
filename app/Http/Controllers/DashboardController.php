@@ -10,6 +10,7 @@ use App\Models\ReferralCode;
 use App\Models\BinaryTree;
 use Illuminate\Support\Facades\Auth;
 use App\Services\BinaryTreeService;
+use App\Services\NotificationService;
 
 class DashboardController extends Controller
 {
@@ -64,6 +65,15 @@ class DashboardController extends Controller
         // Get user's referral codes
         $referralCodes = ReferralCode::where('assigned_to', $user->id)->get();
 
+        // Calculate growth percentages (simplified - in real app, compare with previous period)
+        $downlineGrowthPercent = '+0%'; // Placeholder
+        $balanceGrowthPercent = '+0%'; // Placeholder
+        $withdrawalGrowthPercent = '+0%'; // Placeholder
+        $pendingEarningsGrowthPercent = '+0%'; // Placeholder
+        $salesText = 'Sales data will be displayed here'; // Placeholder
+        $salesGrowthPercent = '0%'; // Placeholder
+        $salesGrowthPeriod = 'this period'; // Placeholder
+
         return view('dashboard', compact(
             'user',
             'downlinesCount',
@@ -77,7 +87,14 @@ class DashboardController extends Controller
             'networkStats',
             'earningsByType',
             'binaryTreeData',
-            'referralCodes'
+            'referralCodes',
+            'downlineGrowthPercent',
+            'balanceGrowthPercent',
+            'withdrawalGrowthPercent',
+            'pendingEarningsGrowthPercent',
+            'salesText',
+            'salesGrowthPercent',
+            'salesGrowthPeriod'
         ));
     }
 
@@ -215,5 +232,89 @@ class DashboardController extends Controller
             'labels' => $labels,
             'data' => $data
         ]);
+    }
+
+    public function notification()
+    {
+        $user = Auth::user();
+        $notificationService = new NotificationService();
+
+        // Get paginated notifications for the user
+        $notifications = $notificationService->getUserNotifications($user->id, 15);
+
+        // If no notifications exist, create some sample ones for demonstration
+        if ($notifications->isEmpty()) {
+            $this->createSampleNotifications($user, $notificationService);
+            $notifications = $notificationService->getUserNotifications($user->id, 15);
+        }
+
+        return view('DashboardNotification', compact('notifications'));
+    }
+
+    private function createSampleNotifications(User $user, NotificationService $notificationService)
+    {
+        // Welcome notification
+        $notificationService->createNotification(
+            $user->id,
+            'success',
+            'Welcome to AKEN MLM!',
+            'Your account has been successfully created. Start building your network today!',
+            'rocket',
+            'success'
+        );
+
+        // Profile completion reminder
+        if (!$user->phone || !$user->address) {
+            $notificationService->createNotification(
+                $user->id,
+                'info',
+                'Complete Your Profile',
+                'Please complete your profile information to unlock all features.',
+                'user-edit',
+                'info'
+            );
+        }
+
+        // Referral code notification
+        $notificationService->createNotification(
+            $user->id,
+            'info',
+            'Your Referral Link is Ready',
+            'Share your referral link to start earning commissions: ' . url('/register?ref=' . $user->referral_code),
+            'link',
+            'primary'
+        );
+
+        // Network building tips
+        $downlinesCount = User::where('sponsor_id', $user->id)->count();
+        if ($downlinesCount == 0) {
+            $notificationService->createNotification(
+                $user->id,
+                'info',
+                'Start Building Your Network',
+                'Add your first referral to begin earning from the binary compensation plan.',
+                'users',
+                'primary'
+            );
+        }
+
+        // Recent earnings notification (if any)
+        $recentEarnings = Earning::where('user_id', $user->id)->latest()->first();
+        if ($recentEarnings) {
+            $notificationService->notifyEarnings($user, $recentEarnings);
+        }
+
+        // Pending withdrawals notification
+        $pendingWithdrawals = Withdrawal::where('user_id', $user->id)->where('status', 'pending')->count();
+        if ($pendingWithdrawals > 0) {
+            $notificationService->createNotification(
+                $user->id,
+                'info',
+                'Withdrawal Pending Review',
+                "You have {$pendingWithdrawals} withdrawal request(s) currently being reviewed.",
+                'clock',
+                'warning'
+            );
+        }
     }
 }

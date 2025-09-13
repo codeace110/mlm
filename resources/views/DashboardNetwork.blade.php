@@ -69,6 +69,8 @@
     </div>
 </div>
 
+@endsection
+
 <script>
 let networkData = {!! json_encode($networkTree) !!};
 let currentLevel = 10;
@@ -152,123 +154,6 @@ function updateNetworkStats() {
     document.getElementById('level3Count').textContent = level3Count;
     document.getElementById('totalCount').textContent = level1Count + level2Count + level3Count;
 }
-
-// function drawBinaryTree() {
-//     const canvas = document.getElementById('binary-tree-canvas');
-//     const ctx = canvas.getContext('2d');
-//     const width = canvas.width;
-//     const height = canvas.height;
-//     const centerX = width / 2;
-
-//     ctx.clearRect(0, 0, width, height);
-
-//     // Draw central vertical line as a thick wall to separate left and right
-//     ctx.save();
-//     ctx.beginPath();
-//     ctx.moveTo(centerX, 0);
-//     ctx.lineTo(centerX, height);
-//     ctx.strokeStyle = '#ccc';
-//     ctx.lineWidth = 3;
-//     ctx.stroke();
-//     ctx.restore();
-
-//     // Apply transform for zoom and pan
-//     ctx.save();
-//     ctx.translate(translateX, translateY);
-//     ctx.scale(scale, scale);
-
-//     const nodeRadius = 40;
-//     const baseHorizontalOffset = 120; // Shorter horizontal distance
-//     const verticalSpacing = 60; // Shorter vertical distance
-//     const maxDepth = currentLevel;
-
-//     ctx.font = '12px Arial';
-//     ctx.textAlign = 'center';
-
-//     // Draw tree starting from root
-//     drawNode(networkData, centerX, 80, 0, maxDepth, ctx, nodeRadius, baseHorizontalOffset, verticalSpacing);
-
-//     ctx.restore();
-// }
-
-// function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, baseHOffset, vSpacing) {
-//     if (!node || depth > maxDepth) return;
-
-//     // Minimal fanning to keep close - pow(1.2, depth) for slight separation, no overlap
-//     const hOffset = baseHOffset * Math.pow(1.2, depth);
-
-//     // Draw avatar circle
-//     ctx.beginPath();
-//     ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
-
-//     if (node.profile_image) {
-//         ctx.fillStyle = '#e0e0e0';
-//         ctx.fill();
-//         ctx.fillStyle = '#333';
-//         ctx.fillText(node.name.charAt(0).toUpperCase(), x, y + 5);
-//     } else {
-//         const balance = Math.abs(parseFloat(node.left_volume) - parseFloat(node.right_volume));
-//         ctx.fillStyle = balance < 100 ? '#4CAF50' : '#f44336';
-//         ctx.fill();
-//         ctx.fillStyle = '#fff';
-//         ctx.font = 'bold 16px Arial';
-//         ctx.fillText(node.name.charAt(0).toUpperCase(), x, y + 6);
-//     }
-
-//     ctx.strokeStyle = '#ddd';
-//     ctx.lineWidth = 2;
-//     ctx.stroke();
-
-//     // Draw name below avatar
-//     ctx.fillStyle = '#333';
-//     ctx.font = 'bold 12px Arial';
-//     ctx.fillText(node.name, x, y + nodeRadius + 20);
-
-//     // Draw volumes
-//     ctx.fillStyle = '#666';
-//     ctx.font = '10px Arial';
-//     ctx.fillText('L: ' + node.left_volume + ' R: ' + node.right_volume, x, y + nodeRadius + 40);
-
-//     // Draw left wing (child[0] is left) - stays strictly left of center
-//     if (node.children && node.children[0] && depth < maxDepth) {
-//         const leftX = x - hOffset;
-//         const leftY = y + vSpacing;
-//         // Short line to left child
-//         ctx.beginPath();
-//         ctx.moveTo(x - 10, y + nodeRadius); // Start slightly left from center
-//         ctx.lineTo(leftX + 10, leftY - nodeRadius); // End slightly right on child
-//         ctx.strokeStyle = '#999';
-//         ctx.lineWidth = 2;
-//         ctx.stroke();
-//         // Label "Left" on line
-//         const midXLeft = (x - 10 + leftX + 10) / 2;
-//         const midYLeft = (y + nodeRadius + leftY - nodeRadius) / 2;
-//         ctx.fillStyle = '#999';
-//         ctx.font = 'italic 10px Arial';
-//         ctx.fillText('Left', midXLeft - 15, midYLeft);
-//         drawNode(node.children[0], leftX, leftY, depth + 1, maxDepth, ctx, nodeRadius, baseHOffset, vSpacing);
-//     }
-
-//     // Draw right wing (child[1] is right) - stays strictly right of center
-//     if (node.children && node.children[1] && depth < maxDepth) {
-//         const rightX = x + hOffset;
-//         const rightY = y + vSpacing;
-//         // Short line to right child
-//         ctx.beginPath();
-//         ctx.moveTo(x + 10, y + nodeRadius); // Start slightly right from center
-//         ctx.lineTo(rightX - 10, rightY - nodeRadius); // End slightly left on child
-//         ctx.strokeStyle = '#999';
-//         ctx.lineWidth = 2;
-//         ctx.stroke();
-//         // Label "Right" on line
-//         const midXRight = (x + 10 + rightX - 10) / 2;
-//         const midYRight = (y + nodeRadius + rightY - nodeRadius) / 2;
-//         ctx.fillStyle = '#999';
-//         ctx.font = 'italic 10px Arial';
-//         ctx.fillText('Right', midXRight - 20, midYRight);
-//         drawNode(node.children[1], rightX, rightY, depth + 1, maxDepth, ctx, nodeRadius, baseHOffset, vSpacing);
-//     }
-// }
 
 function drawBinaryTree() {
     const canvas = document.getElementById('binary-tree-canvas');
@@ -409,4 +294,3 @@ function refreshNetwork() {
     window.location.reload();
 }
 </script>
-@endsection

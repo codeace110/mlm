@@ -15,6 +15,8 @@ class BinaryTree extends Model
         'right_child_id',
         'left_volume',
         'right_volume',
+        'left_spillover',
+        'right_spillover',
         'carryover_left',
         'carryover_right',
     ];
@@ -22,6 +24,8 @@ class BinaryTree extends Model
     protected $casts = [
         'left_volume' => 'decimal:2',
         'right_volume' => 'decimal:2',
+        'left_spillover' => 'decimal:2',
+        'right_spillover' => 'decimal:2',
         'carryover_left' => 'decimal:2',
         'carryover_right' => 'decimal:2',
     ];

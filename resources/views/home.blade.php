@@ -23,61 +23,65 @@
     <div class="container text-center">
       <h2 class="fw-bold mb-5">Our Featured Products</h2>
       <div class="row g-4">
-        @foreach (['product1','product2','product3'] as $index => $product)
+        @forelse ($products as $product)
         <div class="col-md-4">
           <div class="card border-0 shadow-lg rounded-4 h-100">
-            <img src="{{ asset('assets/'.$product.'.jpg') }}" class="card-img-top rounded-top-4" alt="Product {{ $index+1 }}">
+            <img src="{{ $product->image ? asset($product->image) : asset('assets/product-placeholder.jpg') }}" class="card-img-top rounded-top-4" alt="{{ $product->name }}">
             <div class="card-body">
-              <h5 class="fw-semibold">Product {{ $index+1 }}</h5>
-              <p class="text-muted">High quality product trusted by customers worldwide.</p>
+              <h5 class="fw-semibold">{{ $product->name }}</h5>
+              <p class="text-muted">{{ Str::limit($product->description, 50) }}</p>
               <a href="#" class="btn btn-warning rounded-pill fw-semibold">Buy Now</a>
             </div>
           </div>
         </div>
-        @endforeach
+        @empty
+        <div class="col-12">
+          <p class="text-muted">No products available at the moment.</p>
+        </div>
+        @endforelse
       </div>
     </div>
   </section>
 
-  <!-- Earnings -->
-  <section id="earnings" class="text-center text-white py-5" 
+  <!-- Achievements -->
+  <section id="achievements" class="text-center text-white py-5"
            style="background:linear-gradient(135deg, #112240, #0A192F);">
     <div class="container">
       <h2 class="fw-bold mb-5">Our Achievements</h2>
       <div class="row">
+        @forelse ($achievements as $achievement)
         <div class="col-md-4">
-          <i class="bi bi-cash-stack display-4 text-warning"></i>
-          <h3 class="fw-bold">₱1M+</h3>
-          <p class="opacity-75">Total Sales</p>
+          <i class="bi {{ $achievement['icon'] }} display-4 text-{{ $achievement['color'] }}"></i>
+          <h3 class="fw-bold">{{ $achievement['value'] }}</h3>
+          <p class="opacity-75">{{ $achievement['label'] }}</p>
         </div>
-        <div class="col-md-4">
-          <i class="bi bi-emoji-smile display-4 text-success"></i>
-          <h3 class="fw-bold">500+</h3>
-          <p class="opacity-75">Happy Customers</p>
+        @empty
+        <div class="col-12">
+          <p class="opacity-75">Achievements will be displayed here.</p>
         </div>
-        <div class="col-md-4">
-          <i class="bi bi-box-seam display-4 text-info"></i>
-          <h3 class="fw-bold">50+</h3>
-          <p class="opacity-75">Products Delivered</p>
-        </div>
+        @endforelse
       </div>
     </div>
   </section>
 
-  <!-- Feedbacks -->
-  <section id="feedbacks" class="py-5 bg-white">
+  <!-- Testimonials -->
+  <section id="testimonials" class="py-5 bg-white">
     <div class="container">
       <h2 class="text-center fw-bold mb-5">What Our Customers Say</h2>
       <div class="row g-4">
-        @foreach (['user1','user2','user3'] as $index => $user)
+        @forelse ($testimonials as $testimonial)
         <div class="col-md-4">
           <div class="card shadow-lg border-0 rounded-4 p-4 text-center h-100">
-            <img src="{{ asset('assets/'.$user.'.jpg') }}" class="rounded-circle mb-3" width="70" height="70" alt="User {{ $index+1 }}">
-            <p class="fst-italic">"Amazing service and high-quality products!"</p>
-            <h6 class="fw-semibold">Customer {{ $index+1 }}</h6>
+            <img src="{{ $testimonial['image'] ?? asset('assets/user-placeholder.jpg') }}" class="rounded-circle mb-3" width="70" height="70" alt="{{ $testimonial['name'] }}">
+            <p class="fst-italic">"{{ $testimonial['message'] }}"</p>
+            <h6 class="fw-semibold">{{ $testimonial['name'] }}</h6>
           </div>
         </div>
-        @endforeach
+        @empty
+        <div class="col-12">
+          <p class="text-muted">Testimonials will be displayed here.</p>
+        </div>
+        @endforelse
       </div>
     </div>
   </section>

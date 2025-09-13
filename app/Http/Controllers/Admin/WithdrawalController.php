@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Withdrawal;
+use App\Services\NotificationService;
 
 class WithdrawalController extends Controller
 {
@@ -28,6 +29,24 @@ class WithdrawalController extends Controller
         $withdrawal->user->decrement('account_balance', $withdrawal->amount);
 
         $withdrawal->update(['status' => 'approved']);
+
+        // Create notification for user
+        $notificationService = new NotificationService();
+        $notificationService->createNotification(
+            $withdrawal->user_id,
+            'success',
+            'Withdrawal Approved',
+            "Your withdrawal request for ₱" . number_format($withdrawal->amount, 2) . " via {$withdrawal->method} has been approved. Funds will be processed shortly.",
+            'check-circle',
+            'success',
+            [
+                'withdrawal_id' => $withdrawal->id,
+                'amount' => $withdrawal->amount,
+                'method' => $withdrawal->method,
+                'status' => 'approved'
+            ]
+        );
+
         return back()->with('success', 'Withdrawal approved and balance deducted!');
     }
 
@@ -38,6 +57,24 @@ class WithdrawalController extends Controller
         }
 
         $withdrawal->update(['status' => 'denied']);
+
+        // Create notification for user
+        $notificationService = new NotificationService();
+        $notificationService->createNotification(
+            $withdrawal->user_id,
+            'danger',
+            'Withdrawal Denied',
+            "Your withdrawal request for ₱" . number_format($withdrawal->amount, 2) . " via {$withdrawal->method} has been denied. Please contact support for more information.",
+            'times-circle',
+            'danger',
+            [
+                'withdrawal_id' => $withdrawal->id,
+                'amount' => $withdrawal->amount,
+                'method' => $withdrawal->method,
+                'status' => 'denied'
+            ]
+        );
+
         return back()->with('error', 'Withdrawal denied!');
     }
 }

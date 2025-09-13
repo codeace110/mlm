@@ -7,6 +7,7 @@ use App\Models\Withdrawal;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
+use App\Services\NotificationService;
 
 class WithdrawalsController extends Controller
 {
@@ -32,13 +33,29 @@ class WithdrawalsController extends Controller
         }
 
         // Create withdrawal request (balance will be deducted on approval)
-        Withdrawal::create([
+        $withdrawal = Withdrawal::create([
             'user_id' => $user->id,
             'amount' => $request->amount,
             'method' => $request->method,
             'account_details' => $request->account_details,
             'status' => 'pending',
         ]);
+
+        // Create notification for the user
+        $notificationService = new NotificationService();
+        $notificationService->createNotification(
+            $user->id,
+            'warning',
+            'Withdrawal Request Submitted',
+            "Your withdrawal request for ₱" . number_format($request->amount, 2) . " via {$request->method} has been submitted and is pending approval.",
+            'money-bill-wave',
+            'warning',
+            [
+                'withdrawal_id' => $withdrawal->id,
+                'amount' => $request->amount,
+                'method' => $request->method
+            ]
+        );
 
         return redirect()->route('dashboard.payout')->with('success', 'Withdrawal request submitted successfully! Balance will be deducted upon admin approval.');
     }
@@ -109,7 +126,41 @@ class WithdrawalsController extends Controller
         // Get withdrawal statistics
         $stats = $this->getWithdrawalStats($user);
 
-        return view('DashboardPayout', compact('withdrawals', 'stats', 'user'));
+        // Payment methods configuration
+        $paymentMethods = [
+            [
+                'name' => 'Cebuana Lhuillier',
+                'processing_time' => '1-2 business days',
+                'fee' => 30,
+                'color' => 'primary'
+            ],
+            [
+                'name' => 'M Lhuillier',
+                'processing_time' => '1-2 business days',
+                'fee' => 30,
+                'color' => 'success'
+            ],
+            [
+                'name' => 'Palawan Pawnshop',
+                'processing_time' => '1-2 business days',
+                'fee' => 30,
+                'color' => 'info'
+            ],
+            [
+                'name' => 'GCash',
+                'processing_time' => 'Same day',
+                'fee' => 15,
+                'color' => 'warning'
+            ],
+            [
+                'name' => 'PayMaya',
+                'processing_time' => 'Same day',
+                'fee' => 15,
+                'color' => 'warning'
+            ]
+        ];
+
+        return view('DashboardPayout', compact('withdrawals', 'stats', 'user', 'paymentMethods'));
     }
 
     private function getWithdrawalStats($user)

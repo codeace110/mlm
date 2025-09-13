@@ -32,7 +32,7 @@
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Something else here</a></li>
                         </ul>
                       </div>
-                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">+55%</p>
+                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">{{ $downlineGrowthPercent ?? '+0%' }}</p>
                     </div>
                   </div>
                 </div>
@@ -64,7 +64,7 @@
                         </ul>
                       </div>
                       <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">
-                        <span id="balance-change">+0%</span>
+                        <span id="balance-change">{{ $balanceGrowthPercent ?? '+0%' }}</span>
                       </p>
                     </div>
                   </div>
@@ -98,7 +98,7 @@
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Something else here</a></li>
                         </ul>
                       </div>
-                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">+15%</p>
+                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">{{ $withdrawalGrowthPercent ?? '+0%' }}</p>
                     </div>
                   </div>
                 </div>
@@ -129,7 +129,7 @@
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Something else here</a></li>
                         </ul>
                       </div>
-                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">+90%</p>
+                      <p class="text-white text-sm text-end font-weight-bolder mt-auto mb-0">{{ $pendingEarningsGrowthPercent ?? '+0%' }}</p>
                     </div>
                   </div>
                 </div>
@@ -144,15 +144,20 @@
             </div>
             <div class="card-body pb-0 p-3">
               <ul class="list-group">
+                @php
+                  $positivePercent = 80; // This should come from database/config
+                  $neutralPercent = 17;
+                  $negativePercent = 3;
+                @endphp
                 <li class="list-group-item border-0 d-flex align-items-center px-0 mb-0">
                   <div class="w-100">
                     <div class="d-flex mb-2">
                       <span class="me-2 text-sm font-weight-bold text-dark">Positive Reviews</span>
-                      <span class="ms-auto text-sm font-weight-bold">80%</span>
+                      <span class="ms-auto text-sm font-weight-bold">{{ $positivePercent }}%</span>
                     </div>
                     <div>
                       <div class="progress progress-md">
-                        <div class="progress-bar bg-primary w-80" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-primary w-{{ $positivePercent }}" role="progressbar" aria-valuenow="{{ $positivePercent }}" aria-valuemin="0" aria-valuemax="100"></div>
                       </div>
                     </div>
                   </div>
@@ -161,11 +166,11 @@
                   <div class="w-100">
                     <div class="d-flex mb-2">
                       <span class="me-2 text-sm font-weight-bold text-dark">Neutral Reviews</span>
-                      <span class="ms-auto text-sm font-weight-bold">17%</span>
+                      <span class="ms-auto text-sm font-weight-bold">{{ $neutralPercent }}%</span>
                     </div>
                     <div>
                       <div class="progress progress-md">
-                        <div class="progress-bar bg-primary w-10" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-primary w-{{ $neutralPercent }}" role="progressbar" aria-valuenow="{{ $neutralPercent }}" aria-valuemin="0" aria-valuemax="100"></div>
                       </div>
                     </div>
                   </div>
@@ -174,11 +179,11 @@
                   <div class="w-100">
                     <div class="d-flex mb-2">
                       <span class="me-2 text-sm font-weight-bold text-dark">Negative Reviews</span>
-                      <span class="ms-auto text-sm font-weight-bold">3%</span>
+                      <span class="ms-auto text-sm font-weight-bold">{{ $negativePercent }}%</span>
                     </div>
                     <div>
                       <div class="progress progress-md">
-                        <div class="progress-bar bg-primary w-5" role="progressbar" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-primary w-{{ $negativePercent }}" role="progressbar" aria-valuenow="{{ $negativePercent }}" aria-valuemin="0" aria-valuemax="100"></div>
                       </div>
                     </div>
                   </div>
@@ -188,7 +193,7 @@
             <div class="card-footer pt-0 p-3 d-flex align-items-center">
               <div class="w-60">
                 <p class="text-sm">
-                  More than 1500 product sales in just 1 month
+                  {{ $salesText ?? 'Sales data will be displayed here' }}
                 </p>
               </div>
               <div class="w-40 text-end">
@@ -199,9 +204,7 @@
         </div>
       </div>
       <div class="row my-4">
-
-
-        <div class="col-lg-4 col-md-6">
+        <div class="col-lg-8 col-md-12 mb-4">
           <div class="card h-100">
             <div class="card-header pb-0">
               <h6>Earnings Overview</h6>
@@ -211,15 +214,16 @@
               </p>
             </div>
             <div class="card-body p-3">
-              <!-- Earnings by Type -->
+              <!-- Earnings Breakdown Chart -->
               <div class="mb-4">
                 <h6 class="text-sm font-weight-bold mb-3">Earnings Breakdown</h6>
-                @php
-                  $earningsByType = \App\Models\Earning::where('user_id', auth()->id())
-                      ->selectRaw('type, SUM(amount) as total')
-                      ->groupBy('type')
-                      ->get();
-                @endphp
+                <div class="chart-container" style="position: relative; height: 200px;">
+                  <canvas id="earnings-breakdown-chart"></canvas>
+                </div>
+              </div>
+
+              <!-- Earnings by Type List -->
+              <div class="mb-4">
                 @forelse($earningsByType as $earning)
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="text-xs font-weight-bold text-dark">
@@ -234,7 +238,8 @@
                 @endforelse
               </div>
 
-              <div class="timeline timeline-one-side">
+              <!-- Timeline with max height and scrolling -->
+              <div class="timeline timeline-one-side" style="max-height: 400px; overflow-y: auto;">
                 @forelse($recentReferrals as $referral)
                 <div class="timeline-block mb-3">
                   <span class="timeline-step">
@@ -282,34 +287,107 @@
             </div>
           </div>
         </div>
+
+        <!-- Additional column to fill the row -->
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header pb-0">
+              <h6>Quick Actions</h6>
+            </div>
+            <div class="card-body p-3">
+              <div class="d-grid gap-3">
+                <a href="{{ route('referrals.index') }}" class="btn btn-outline-primary">
+                  <i class="fas fa-users me-2"></i>View Network
+                </a>
+                <a href="{{ route('earnings.index') }}" class="btn btn-outline-success">
+                  <i class="fas fa-chart-line me-2"></i>View Earnings
+                </a>
+                <a href="{{ route('dashboard.payout') }}" class="btn btn-outline-warning">
+                  <i class="fas fa-money-bill-wave me-2"></i>Request Payout
+                </a>
+                <a href="{{ route('profile.edit') }}" class="btn btn-outline-info">
+                  <i class="fas fa-user-edit me-2"></i>Edit Profile
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="row mt-4">
         <div class="col-lg-7 mb-lg-0 mb-4">
-          <div class="card">
+          <div class="card h-100">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">Account Overview</h6>
+            </div>
             <div class="card-body p-3">
               <div class="row">
                 <div class="col-lg-6">
-                  <div class="d-flex flex-column h-100">
-                    <div class="d-flex align-items-center mb-3">
-                        <img src="{{ Auth::user()->profile_image ? asset(Auth::user()->profile_image) : asset('assets/img/team-1.jpg') }}"
-                             class="avatar avatar-xl me-3" alt="Profile">
-                        <div>
-                            <p class="mb-1 pt-2 text-bold">Welcome back,</p>
-                            <h5 class="font-weight-bolder">{{ Auth::user()->name }}</h5>
-                            <p class="mb-0">Your referral code: <strong>{{ Auth::user()->referral_code }}</strong></p>
-                        </div>
+                  <div class="d-flex align-items-center mb-4">
+                    <img src="{{ Auth::user()->profile_image ? asset(Auth::user()->profile_image) : asset('assets/img/team-1.jpg') }}"
+                         class="avatar avatar-xl me-3" alt="Profile">
+                    <div>
+                      <p class="mb-1 text-sm text-muted">Welcome back,</p>
+                      <h5 class="font-weight-bolder mb-1">{{ Auth::user()->name }}</h5>
+                      <p class="mb-0 text-sm">Referral Code: <strong class="text-primary">{{ Auth::user()->referral_code }}</strong></p>
                     </div>
-                    <a class="text-body text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="javascript:;">
-                      Read More
-                      <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
+                  </div>
+
+                  <!-- Account Status -->
+                  <div class="mb-4">
+                    <h6 class="text-sm font-weight-bold mb-3">Account Status</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-xs">Level</span>
+                      <span class="badge bg-gradient-primary">{{ Auth::user()->level ?? 1 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-xs">Status</span>
+                      <span class="badge bg-gradient-success">{{ Auth::user()->status ?? 'Active' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="text-xs">Member Since</span>
+                      <span class="text-xs">{{ Auth::user()->created_at->format('M Y') }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Quick Actions -->
+                  <div class="d-grid gap-2">
+                    <a href="{{ route('profile.edit') }}" class="btn btn-outline-primary btn-sm">
+                      <i class="fas fa-user-edit me-1"></i>Edit Profile
+                    </a>
+                    <a href="{{ route('referrals.index') }}" class="btn btn-outline-success btn-sm">
+                      <i class="fas fa-users me-1"></i>View Network
                     </a>
                   </div>
                 </div>
-                <div class="col-lg-5 ms-auto text-center mt-5 mt-lg-0">
-                  <div class="bg-primary border-radius-lg h-100">
-                    <img src="../assets/img/shapes/waves-white.svg" class="position-absolute h-100 w-50 top-0 d-lg-block d-none" alt="waves">
-                    <div class="position-relative d-flex align-items-center justify-content-center h-100">
-                      <img class="w-100 position-relative z-index-2 pt-4" src="../assets/img/illustrations/rocket-white.png" alt="rocket">
+
+                <div class="col-lg-5 ms-auto">
+                  <div class="row h-100">
+                    <!-- Account Balance Mini Chart -->
+                    <div class="col-12 mb-3">
+                      <div class="card bg-gradient-primary border-radius-lg h-100">
+                        <div class="card-body p-3">
+                          <div class="chart-container" style="position: relative; height: 120px;">
+                            <canvas id="account-balance-mini-chart"></canvas>
+                          </div>
+                          <h6 class="text-white font-weight-bold mb-1">Balance Trend</h6>
+                          <p class="text-white text-sm mb-0">Last 7 days performance</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Progress Section -->
+                    <div class="col-12">
+                      <div class="card bg-gradient-success border-radius-lg h-100">
+                        <div class="card-body p-3 text-center">
+                          <i class="fas fa-rocket text-white mb-2" style="font-size: 2rem;"></i>
+                          <h6 class="text-white font-weight-bold mb-2">Your Journey</h6>
+                          <p class="text-white text-sm mb-3">Keep growing your network!</p>
+                          <div class="progress mb-2" style="height: 6px;">
+                            <div class="progress-bar bg-white" role="progressbar" style="width: {{ min(100, ($downlinesCount / 10) * 100) }}%"></div>
+                          </div>
+                          <small class="text-white-50">{{ $downlinesCount }}/10 to next level</small>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -317,151 +395,209 @@
             </div>
           </div>
         </div>
+
         <div class="col-lg-5">
-           <div class="card h-100 p-3">
-             <div class="overflow-hidden position-relative border-radius-lg bg-cover h-100" style="background-image: url('../assets/img/ivancik.jpg');">
-               <span class="mask bg-gradient-dark"></span>
-               <div class="card-body position-relative z-index-1 d-flex flex-column h-100 p-3">
-                 <h5 class="text-white font-weight-bolder mb-4 pt-2">Build Your Network Empire</h5>
-                 <p class="text-white">Join thousands of successful entrepreneurs building passive income through our multi-level marketing platform. Start your journey to financial freedom today.</p>
-                 <a class="text-white text-sm font-weight-bold mb-0 icon-move-right mt-auto" href="javascript:;">
-                   Build Your Network
-                   <i class="fas fa-arrow-right text-sm ms-1" aria-hidden="true"></i>
-                 </a>
-               </div>
-             </div>
-           </div>
-         </div>
-      </div>
-      <div class="row mt-4">
-        <div class="col-lg-5 mb-lg-0 mb-4">
-          <div class="card z-index-2">
-            <div class="card-body p-2">
-              <div class="bg-dark border-radius-md py-3 pe-1 mb-3">
-                <div class="chart">
-                  <canvas id="chart-bars" class="chart-canvas" height="170"></canvas>
-                </div>
-              </div>
-              <h6 class="ms-2 mt-4 mb-0"> Network Performance </h6>
-              <p class="text-sm ms-2"> (<span class="font-weight-bolder">{{ $networkStats['level1'] + $networkStats['level2'] + $networkStats['level3'] }}%</span>) network growth </p>
-              <div class="container border-radius-lg">
-                <div class="row">
-                  <div class="col-3 py-3 ps-0">
-                    <div class="d-flex mb-2">
-                      <div class="icon icon-shape icon-xxs shadow border-radius-sm bg-primary text-center me-2 d-flex align-items-center justify-content-center">
-                        <svg width="10px" height="10px" viewBox="0 0 40 44" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                          <title>document</title>
-                          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-1870.000000, -591.000000)" fill="#FFFFFF" fill-rule="nonzero">
-                              <g transform="translate(1716.000000, 291.000000)">
-                                <g transform="translate(154.000000, 300.000000)">
-                                  <path class="color-background" d="M40,40 L36.3636364,40 L36.3636364,3.63636364 L5.45454545,3.63636364 L5.45454545,0 L38.1818182,0 C39.1854545,0 40,0.814545455 40,1.81818182 L40,40 Z" opacity="0.603585379"></path>
-                                  <path class="color-background" d="M30.9090909,7.27272727 L1.81818182,7.27272727 C0.814545455,7.27272727 0,8.08727273 0,9.09090909 L0,41.8181818 C0,42.8218182 0.814545455,43.6363636 1.81818182,43.6363636 L30.9090909,43.6363636 C31.9127273,43.6363636 32.7272727,42.8218182 32.7272727,41.8181818 L32.7272727,9.09090909 C32.7272727,8.08727273 31.9127273,7.27272727 30.9090909,7.27272727 Z M18.1818182,34.5454545 L7.27272727,34.5454545 L7.27272727,30.9090909 L18.1818182,30.9090909 L18.1818182,34.5454545 Z M25.4545455,27.2727273 L7.27272727,27.2727273 L7.27272727,23.6363636 L25.4545455,23.6363636 L25.4545455,27.2727273 Z M25.4545455,20 L7.27272727,20 L7.27272727,16.3636364 L25.4545455,16.3636364 L25.4545455,20 Z"></path>
-                                </g>
-                              </g>
-                            </g>
-                          </g>
-                        </svg>
-                      </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Direct</p>
-                    </div>
-                    <h4 class="font-weight-bolder">{{ $networkStats['level1'] }}</h4>
-                    <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['level1'] * 10) }}" role="progressbar" aria-valuenow="{{ $networkStats['level1'] }}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                  <div class="col-3 py-3 ps-0">
-                    <div class="d-flex mb-2">
-                      <div class="icon icon-shape icon-xxs shadow border-radius-sm bg-gradient-info text-center me-2 d-flex align-items-center justify-content-center">
-                        <svg width="10px" height="10px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                          <title>spaceship</title>
-                          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-1720.000000, -592.000000)" fill="#FFFFFF" fill-rule="nonzero">
-                              <g transform="translate(1716.000000, 291.000000)">
-                                <g transform="translate(4.000000, 301.000000)">
-                                  <path class="color-background" d="M39.3,0.706666667 C38.9660984,0.370464027 38.5048767,0.192278529 38.0316667,0.216666667 C14.6516667,1.43666667 6.015,22.2633333 5.93166667,22.4733333 C5.68236407,23.0926189 5.82664679,23.8009159 6.29833333,24.2733333 L15.7266667,33.7016667 C16.2013871,34.1756798 16.9140329,34.3188658 17.535,34.065 C17.7433333,33.98 38.4583333,25.2466667 39.7816667,1.97666667 C39.8087196,1.50414529 39.6335979,1.04240574 39.3,0.706666667 Z M25.69,19.0233333 C24.7367525,19.9768687 23.3029475,20.2622391 22.0572426,19.7463614 C20.8115377,19.2304837 19.9992882,18.0149658 19.9992882,16.6666667 C19.9992882,15.3183676 20.8115377,14.1028496 22.0572426,13.5869719 C23.3029475,13.0710943 24.7367525,13.3564646 25.69,14.31 C26.9912731,15.6116662 26.9912731,17.7216672 25.69,19.0233333 L25.69,19.0233333 Z"></path>
-                                  <path class="color-background" d="M1.855,31.4066667 C3.05106558,30.2024182 4.79973884,29.7296005 6.43969145,30.1670277 C8.07964407,30.6044549 9.36054508,31.8853559 9.7979723,33.5253085 C10.2353995,35.1652612 9.76258177,36.9139344 8.55833333,38.11 C6.70666667,39.9616667 0,40 0,40 C0,40 0,33.2566667 1.855,31.4066667 Z"></path>
-                                  <path class="color-background" d="M17.2616667,3.90166667 C12.4943643,3.07192755 7.62174065,4.61673894 4.20333333,8.04166667 C3.31200265,8.94126033 2.53706177,9.94913142 1.89666667,11.0416667 C1.5109569,11.6966059 1.61721591,12.5295394 2.155,13.0666667 L5.47,16.3833333 C8.55036617,11.4946947 12.5559074,7.25476565 17.2616667,3.90166667 L17.2616667,3.90166667 Z" opacity="0.598539807"></path>
-                                  <path class="color-background" d="M36.0983333,22.7383333 C36.9280725,27.5056357 35.3832611,32.3782594 31.9583333,35.7966667 C31.0587397,36.6879974 30.0508686,37.4629382 28.9583333,38.1033333 C28.3033941,38.4890431 27.4704606,38.3827841 26.9333333,37.845 L23.6166667,34.53 C28.5053053,31.4496338 32.7452344,27.4440926 36.0983333,22.7383333 L36.0983333,22.7383333 Z" opacity="0.598539807"></path>
-                                </g>
-                              </g>
-                            </g>
-                          </g>
-                        </svg>
-                      </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Level 2</p>
-                    </div>
-                    <h4 class="font-weight-bolder">{{ $networkStats['level2'] }}</h4>
-                    <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['level2'] * 10) }}" role="progressbar" aria-valuenow="{{ $networkStats['level2'] }}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                  <div class="col-3 py-3 ps-0">
-                    <div class="d-flex mb-2">
-                      <div class="icon icon-shape icon-xxs shadow border-radius-sm bg-gradient-warning text-center me-2 d-flex align-items-center justify-content-center">
-                        <svg width="10px" height="10px" viewBox="0 0 43 36" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                          <title>credit-card</title>
-                          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-2169.000000, -745.000000)" fill="#FFFFFF" fill-rule="nonzero">
-                              <g transform="translate(1716.000000, 291.000000)">
-                                <g transform="translate(453.000000, 454.000000)">
-                                  <path class="color-background" d="M43,10.7482083 L43,3.58333333 C43,1.60354167 41.3964583,0 39.4166667,0 L3.58333333,0 C1.60354167,0 0,1.60354167 0,3.58333333 L0,10.7482083 L43,10.7482083 Z" opacity="0.593633743"></path>
-                                  <path class="color-background" d="M0,16.125 L0,32.25 C0,34.2297917 1.60354167,35.8333333 3.58333333,35.8333333 L39.4166667,35.8333333 C41.3964583,35.8333333 43,34.2297917 43,32.25 L43,16.125 L0,16.125 Z M19.7083333,26.875 L7.16666667,26.875 L7.16666667,23.2916667 L19.7083333,23.2916667 L19.7083333,26.875 Z M35.8333333,26.875 L28.6666667,26.875 L28.6666667,23.2916667 L35.8333333,23.2916667 L35.8333333,26.875 Z"></path>
-                                </g>
-                              </g>
-                            </g>
-                          </g>
-                        </svg>
-                      </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Level 3</p>
-                    </div>
-                    <h4 class="font-weight-bolder">{{ $networkStats['level3'] }}</h4>
-                    <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['level3'] * 10) }}" role="progressbar" aria-valuenow="{{ $networkStats['level3'] }}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                  <div class="col-3 py-3 ps-0">
-                    <div class="d-flex mb-2">
-                      <div class="icon icon-shape icon-xxs shadow border-radius-sm bg-gradient-danger text-center me-2 d-flex align-items-center justify-content-center">
-                        <svg width="10px" height="10px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                          <title>settings</title>
-                          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-2020.000000, -442.000000)" fill="#FFFFFF" fill-rule="nonzero">
-                              <g transform="translate(1716.000000, 291.000000)">
-                                <g transform="translate(304.000000, 151.000000)">
-                                  <polygon class="color-background" opacity="0.596981957" points="18.0883333 15.7316667 11.1783333 8.82166667 13.3333333 6.66666667 6.66666667 0 0 6.66666667 6.66666667 13.3333333 8.82166667 11.1783333 15.315 17.6716667"></polygon>
-                                  <path class="color-background" d="M31.5666667,23.2333333 C31.0516667,23.2933333 30.53,23.3333333 30,23.3333333 C29.4916667,23.3333333 28.9866667,23.3033333 28.48,23.245 L22.4116667,30.7433333 L29.9416667,38.2733333 C32.2433333,40.575 35.9733333,40.575 38.275,38.2733333 L38.275,38.2733333 C40.5766667,35.9716667 40.5766667,32.2416667 38.275,29.94 L31.5666667,23.2333333 Z" opacity="0.596981957"></path>
-                                  <path class="color-background" d="M33.785,11.285 L28.715,6.215 L34.0616667,0.868333333 C32.82,0.315 31.4483333,0 30,0 C24.4766667,0 20,4.47666667 20,10 C20,10.99 20.1483333,11.9433333 20.4166667,12.8466667 L2.435,27.3966667 C0.95,28.7083333 0.0633333333,30.595 0.00333333333,32.5733333 C-0.0583333333,34.5533333 0.71,36.4916667 2.11,37.89 C3.47,39.2516667 5.27833333,40 7.20166667,40 C9.26666667,40 11.2366667,39.1133333 12.6033333,37.565 L27.1533333,19.5833333 C28.0566667,19.8516667 29.01,20 30,20 C35.5233333,20 40,15.5233333 40,10 C40,8.55166667 39.685,7.18 39.1316667,5.93666667 L33.785,11.285 Z"></path>
-                                </g>
-                              </g>
-                            </g>
-                          </g>
-                        </svg>
-                      </div>
-                      <p class="text-xs mt-1 mb-0 font-weight-bold">Total</p>
-                    </div>
-                    <h4 class="font-weight-bolder">{{ $networkStats['total'] }}</h4>
-                    <div class="progress w-75">
-                      <div class="progress-bar bg-dark w-{{ min(100, $networkStats['total'] * 5) }}" role="progressbar" aria-valuenow="{{ $networkStats['total'] }}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-7">
-          <div class="card z-index-2">
+          <div class="card h-100">
             <div class="card-header pb-0">
-              <h6>Sales overview</h6>
-              <p class="text-sm">
-                <i class="fa fa-arrow-up text-success"></i>
-                <span class="font-weight-bold">4% more</span> in 2021
-              </p>
+              <h6 class="mb-0">Network Growth</h6>
             </div>
             <div class="card-body p-3">
-              <div class="chart">
-                <canvas id="chart-line" class="chart-canvas" height="300"></canvas>
+              <!-- Network Stats -->
+              <div class="row text-center mb-4">
+                <div class="col-4">
+                  <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-users text-primary mb-2" style="font-size: 1.5rem;"></i>
+                    <h4 class="font-weight-bold mb-0">{{ $downlinesCount }}</h4>
+                    <small class="text-muted">Direct</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-sitemap text-success mb-2" style="font-size: 1.5rem;"></i>
+                    <h4 class="font-weight-bold mb-0">{{ $networkStats['total'] ?? 0 }}</h4>
+                    <small class="text-muted">Total</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="d-flex flex-column align-items-center">
+                    <i class="fas fa-chart-line text-warning mb-2" style="font-size: 1.5rem;"></i>
+                    <h4 class="font-weight-bold mb-0">{{ $networkStats['level1'] + $networkStats['level2'] + $networkStats['level3'] }}%</h4>
+                    <small class="text-muted">Growth</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Motivational Content -->
+              <div class="text-center">
+                <h6 class="font-weight-bold mb-3">Build Your Network Empire</h6>
+                <p class="text-sm text-muted mb-4">Every new member you bring strengthens your earning potential. Share your referral link and watch your network grow!</p>
+
+                <!-- Share Referral Link -->
+                <div class="input-group mb-3">
+                  <input type="text" class="form-control form-control-sm" value="{{ url('/register?ref=' . Auth::user()->referral_code) }}" readonly id="referralLink">
+                  <button class="btn btn-primary btn-sm" type="button" onclick="copyReferralLink()">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <a href="{{ route('referrals.index') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Add New Member
+                  </a>
+                  <a href="javascript:;" class="btn btn-outline-primary btn-sm" onclick="shareReferral()">
+                    <i class="fas fa-share me-1"></i>Share Link
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mt-4">
+        <div class="col-lg-6 mb-lg-0 mb-4">
+          <div class="card h-100">
+            <div class="card-header pb-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-0">Network Performance Analytics</h6>
+                  <p class="text-sm mb-0">
+                    <i class="fas fa-chart-line text-success me-1"></i>
+                    <span class="font-weight-bold">{{ $networkStats['level1'] + $networkStats['level2'] + $networkStats['level3'] }}%</span> network growth rate
+                  </p>
+                </div>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-filter me-1"></i>Filter
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="filterNetworkChart('7d')">Last 7 days</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="filterNetworkChart('30d')">Last 30 days</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="filterNetworkChart('90d')">Last 90 days</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-3">
+              <!-- Network Performance Chart -->
+              <div class="chart-container" style="position: relative; height: 250px;">
+                <canvas id="network-performance-chart"></canvas>
+              </div>
+
+              <!-- Network Level Breakdown -->
+              <div class="row mt-4">
+                <div class="col-6">
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="badge bg-primary me-3" style="width: 12px; height: 12px; border-radius: 50%;"></div>
+                    <div>
+                      <p class="text-xs mb-0 font-weight-bold">Direct Level</p>
+                      <h6 class="mb-0">{{ $networkStats['level1'] }} members</h6>
+                    </div>
+                  </div>
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-primary" style="width: {{ min(100, ($networkStats['level1'] / max(1, $networkStats['total'])) * 100) }}%"></div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="badge bg-info me-3" style="width: 12px; height: 12px; border-radius: 50%;"></div>
+                    <div>
+                      <p class="text-xs mb-0 font-weight-bold">Level 2</p>
+                      <h6 class="mb-0">{{ $networkStats['level2'] }} members</h6>
+                    </div>
+                  </div>
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-info" style="width: {{ min(100, ($networkStats['level2'] / max(1, $networkStats['total'])) * 100) }}%"></div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="badge bg-warning me-3" style="width: 12px; height: 12px; border-radius: 50%;"></div>
+                    <div>
+                      <p class="text-xs mb-0 font-weight-bold">Level 3</p>
+                      <h6 class="mb-0">{{ $networkStats['level3'] }} members</h6>
+                    </div>
+                  </div>
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-warning" style="width: {{ min(100, ($networkStats['level3'] / max(1, $networkStats['total'])) * 100) }}%"></div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="badge bg-success me-3" style="width: 12px; height: 12px; border-radius: 50%;"></div>
+                    <div>
+                      <p class="text-xs mb-0 font-weight-bold">Total Network</p>
+                      <h6 class="mb-0">{{ $networkStats['total'] }} members</h6>
+                    </div>
+                  </div>
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-success" style="width: 100%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header pb-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-0">Sales & Revenue Analytics</h6>
+                  <p class="text-sm mb-0">
+                    <i class="fas fa-arrow-up text-success me-1"></i>
+                    <span class="font-weight-bold">{{ $salesGrowthPercent ?? '+12%' }}</span> growth this month
+                  </p>
+                </div>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-calendar me-1"></i>Period
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="filterSalesChart('weekly')">Weekly</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="filterSalesChart('monthly')">Monthly</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="filterSalesChart('yearly')">Yearly</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-3">
+              <!-- Sales Chart -->
+              <div class="chart-container" style="position: relative; height: 250px;">
+                <canvas id="sales-analytics-chart"></canvas>
+              </div>
+
+              <!-- Sales Metrics -->
+              <div class="row mt-4 text-center">
+                <div class="col-4">
+                  <div class="border-right">
+                    <h4 class="font-weight-bold text-primary mb-1">{{ $totalEarnings ? '₱' . number_format($totalEarnings, 0) : '₱0' }}</h4>
+                    <p class="text-xs text-muted mb-0">Total Revenue</p>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="border-right">
+                    <h4 class="font-weight-bold text-success mb-1">{{ $accountBalance ? '₱' . number_format($accountBalance, 0) : '₱0' }}</h4>
+                    <p class="text-xs text-muted mb-0">Available Balance</p>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="border-right">
+                    <h4 class="font-weight-bold text-warning mb-1">{{ $pendingEarnings ? '₱' . number_format($pendingEarnings, 0) : '₱0' }}</h4>
+                    <p class="text-xs text-muted mb-0">Pending Earnings</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Performance Indicators -->
+              <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-sm">Monthly Target</span>
+                  <span class="text-sm font-weight-bold">{{ $salesGrowthPercent ?? '75%' }}</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-gradient-success" style="width: {{ $salesGrowthPercent ?? '75%' }}"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -475,24 +611,22 @@
                 © <script>
                   document.write(new Date().getFullYear())
                 </script>,
-                made with <i class="fa fa-heart"></i> by
-                <a href="https://www.creative-tim.com" class="font-weight-bold" target="_blank">Creative Tim</a>
-                for a better web.
+                {{ config('app.name', 'MLM Platform') }} - All rights reserved.
               </div>
             </div>
             <div class="col-lg-6">
               <ul class="nav nav-footer justify-content-center justify-content-lg-end">
                 <li class="nav-item">
-                  <a href="https://www.creative-tim.com" class="nav-link text-muted" target="_blank">Creative Tim</a>
+                  <a href="{{ route('dashboard') }}" class="nav-link text-muted">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                  <a href="https://www.creative-tim.com/presentation" class="nav-link text-muted" target="_blank">About Us</a>
+                  <a href="{{ route('referrals.index') }}" class="nav-link text-muted">Network</a>
                 </li>
                 <li class="nav-item">
-                  <a href="https://www.creative-tim.com/blog" class="nav-link text-muted" target="_blank">Blog</a>
+                  <a href="{{ route('earnings.index') }}" class="nav-link text-muted">Earnings</a>
                 </li>
                 <li class="nav-item">
-                  <a href="https://www.creative-tim.com/license" class="nav-link pe-0 text-muted" target="_blank">License</a>
+                  <a href="{{ route('dashboard.payout') }}" class="nav-link pe-0 text-muted">Withdrawals</a>
                 </li>
               </ul>
             </div>
@@ -569,6 +703,47 @@
   </div>
 
   <script>
+      // Copy referral link to clipboard
+      function copyReferralLink() {
+          const referralLink = document.getElementById('referralLink');
+          referralLink.select();
+          referralLink.setSelectionRange(0, 99999); // For mobile devices
+          navigator.clipboard.writeText(referralLink.value).then(function() {
+              // Show success message
+              const btn = event.target.closest('button');
+              const originalHtml = btn.innerHTML;
+              btn.innerHTML = '<i class="fas fa-check"></i>';
+              btn.classList.add('btn-success');
+              btn.classList.remove('btn-primary');
+              setTimeout(() => {
+                  btn.innerHTML = originalHtml;
+                  btn.classList.remove('btn-success');
+                  btn.classList.add('btn-primary');
+              }, 2000);
+          }).catch(function(err) {
+              console.error('Failed to copy: ', err);
+          });
+      }
+
+      // Share referral link
+      function shareReferral() {
+          const referralLink = document.getElementById('referralLink').value;
+          const shareText = `Join me in this amazing MLM opportunity! Use my referral code: ${referralLink}`;
+
+          if (navigator.share) {
+              navigator.share({
+                  title: 'Join Our MLM Network',
+                  text: shareText,
+                  url: referralLink
+              });
+          } else {
+              // Fallback for browsers that don't support Web Share API
+              navigator.clipboard.writeText(shareText).then(function() {
+                  alert('Referral link copied to clipboard! Share it with your friends.');
+              });
+          }
+      }
+
       // AJAX functionality for live updates
       function updateDashboardStats() {
           // Update earnings stats
@@ -638,6 +813,12 @@
               }
           })
           .catch(error => console.error('Error loading chart data:', error));
+
+      // Initialize new analytics charts
+      renderNetworkPerformanceChart();
+      renderSalesAnalyticsChart();
+      renderEarningsBreakdownChart();
+      renderAccountBalanceMiniChart();
   }
 
   function renderEarningsChart(earningsData) {
@@ -808,6 +989,392 @@
               },
           },
       });
+  }
+
+  // New Network Performance Chart
+  function renderNetworkPerformanceChart() {
+      const ctx = document.getElementById("network-performance-chart");
+      if (!ctx) return;
+
+      // Destroy existing chart if it exists
+      if (window.networkPerformanceChart) {
+          window.networkPerformanceChart.destroy();
+      }
+
+      // Sample data - in real app, this would come from AJAX
+      const networkData = {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          datasets: [
+              {
+                  label: 'Direct Level',
+                  data: [12, 19, 15, 25, 22, 30, 28],
+                  borderColor: '#5e72e4',
+                  backgroundColor: 'rgba(94, 114, 228, 0.1)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4
+              },
+              {
+                  label: 'Level 2',
+                  data: [8, 12, 18, 15, 20, 25, 22],
+                  borderColor: '#11cdef',
+                  backgroundColor: 'rgba(17, 205, 239, 0.1)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4
+              },
+              {
+                  label: 'Level 3',
+                  data: [5, 8, 12, 10, 15, 18, 20],
+                  borderColor: '#fb6340',
+                  backgroundColor: 'rgba(251, 99, 64, 0.1)',
+                  borderWidth: 2,
+                  fill: true,
+                  tension: 0.4
+              }
+          ]
+      };
+
+      window.networkPerformanceChart = new Chart(ctx, {
+          type: 'line',
+          data: networkData,
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: true,
+                      position: 'top',
+                      labels: {
+                          usePointStyle: true,
+                          padding: 20,
+                          font: {
+                              size: 12
+                          }
+                      }
+                  },
+                  tooltip: {
+                      mode: 'index',
+                      intersect: false,
+                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      titleColor: '#fff',
+                      bodyColor: '#fff',
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      borderWidth: 1
+                  }
+              },
+              interaction: {
+                  mode: 'nearest',
+                  axis: 'x',
+                  intersect: false
+              },
+              scales: {
+                  x: {
+                      display: true,
+                      grid: {
+                          display: false
+                      },
+                      ticks: {
+                          color: '#8898aa'
+                      }
+                  },
+                  y: {
+                      display: true,
+                      grid: {
+                          color: 'rgba(0,0,0,0.05)',
+                          drawBorder: false
+                      },
+                      ticks: {
+                          color: '#8898aa',
+                          callback: function(value) {
+                              return value + ' members';
+                          }
+                      }
+                  }
+              },
+              elements: {
+                  point: {
+                      radius: 4,
+                      hoverRadius: 6
+                  }
+              }
+          }
+      });
+  }
+
+  // New Sales Analytics Chart
+  function renderSalesAnalyticsChart() {
+      const ctx = document.getElementById("sales-analytics-chart");
+      if (!ctx) return;
+
+      // Destroy existing chart if it exists
+      if (window.salesAnalyticsChart) {
+          window.salesAnalyticsChart.destroy();
+      }
+
+      // Sample data - in real app, this would come from AJAX
+      const salesData = {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          datasets: [
+              {
+                  label: 'Revenue',
+                  data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
+                  borderColor: '#2dce89',
+                  backgroundColor: 'rgba(45, 206, 137, 0.1)',
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.4,
+                  yAxisID: 'y'
+              },
+              {
+                  label: 'Growth %',
+                  data: [5, 12, 8, 15, 10, 18, 14],
+                  borderColor: '#f5365c',
+                  backgroundColor: 'rgba(245, 54, 92, 0.1)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  fill: false,
+                  tension: 0.4,
+                  yAxisID: 'y1'
+              }
+          ]
+      };
+
+      window.salesAnalyticsChart = new Chart(ctx, {
+          type: 'line',
+          data: salesData,
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: true,
+                      position: 'top',
+                      labels: {
+                          usePointStyle: true,
+                          padding: 20,
+                          font: {
+                              size: 12
+                          }
+                      }
+                  },
+                  tooltip: {
+                      mode: 'index',
+                      intersect: false,
+                      callbacks: {
+                          label: function(context) {
+                              let label = context.dataset.label || '';
+                              if (label) {
+                                  label += ': ';
+                              }
+                              if (context.datasetIndex === 0) {
+                                  label += '₱' + context.parsed.y.toLocaleString();
+                              } else {
+                                  label += context.parsed.y + '%';
+                              }
+                              return label;
+                          }
+                      }
+                  }
+              },
+              interaction: {
+                  mode: 'nearest',
+                  axis: 'x',
+                  intersect: false
+              },
+              scales: {
+                  x: {
+                      display: true,
+                      grid: {
+                          display: false
+                      },
+                      ticks: {
+                          color: '#8898aa'
+                      }
+                  },
+                  y: {
+                      type: 'linear',
+                      display: true,
+                      position: 'left',
+                      grid: {
+                          color: 'rgba(0,0,0,0.05)',
+                          drawBorder: false
+                      },
+                      ticks: {
+                          color: '#8898aa',
+                          callback: function(value) {
+                              return '₱' + (value / 1000) + 'k';
+                          }
+                      }
+                  },
+                  y1: {
+                      type: 'linear',
+                      display: true,
+                      position: 'right',
+                      grid: {
+                          drawOnChartArea: false,
+                      },
+                      ticks: {
+                          color: '#fb6340',
+                          callback: function(value) {
+                              return value + '%';
+                          }
+                      }
+                  }
+              },
+              elements: {
+                  point: {
+                      radius: 4,
+                      hoverRadius: 6
+                  }
+              }
+          }
+      });
+  }
+
+  // Earnings Breakdown Chart
+  function renderEarningsBreakdownChart() {
+      const ctx = document.getElementById("earnings-breakdown-chart");
+      if (!ctx) return;
+
+      // Destroy existing chart if it exists
+      if (window.earningsBreakdownChart) {
+          window.earningsBreakdownChart.destroy();
+      }
+
+      // Sample data - in real app, this would come from PHP variables
+      const earningsData = {
+          labels: ['Direct', 'Pair', 'Matching', 'Spillover', 'Bonus'],
+          datasets: [{
+              data: [4500, 3200, 1800, 1200, 800],
+              backgroundColor: [
+                  '#5e72e4', // Primary blue
+                  '#2dce89', // Success green
+                  '#11cdef', // Info blue
+                  '#fb6340', // Warning orange
+                  '#f5365c'  // Danger red
+              ],
+              borderWidth: 0,
+              hoverBorderWidth: 2,
+              hoverBorderColor: '#fff'
+          }]
+      };
+
+      window.earningsBreakdownChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: earningsData,
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: true,
+                      position: 'bottom',
+                      labels: {
+                          padding: 15,
+                          usePointStyle: true,
+                          font: {
+                              size: 11
+                          }
+                      }
+                  },
+                  tooltip: {
+                      callbacks: {
+                          label: function(context) {
+                              const label = context.label || '';
+                              const value = context.parsed;
+                              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                              const percentage = ((value / total) * 100).toFixed(1);
+                              return label + ': ₱' + value.toLocaleString() + ' (' + percentage + '%)';
+                          }
+                      }
+                  }
+              },
+              cutout: '60%'
+          }
+      });
+  }
+
+  // Account Balance Mini Chart
+  function renderAccountBalanceMiniChart() {
+      const ctx = document.getElementById("account-balance-mini-chart");
+      if (!ctx) return;
+
+      // Destroy existing chart if it exists
+      if (window.accountBalanceMiniChart) {
+          window.accountBalanceMiniChart.destroy();
+      }
+
+      // Sample data - in real app, this would come from AJAX
+      const balanceData = {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+              label: 'Balance',
+              data: [12500, 13200, 12800, 14100, 13800, 15200, 15800],
+              borderColor: '#ffffff',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              pointBackgroundColor: '#ffffff',
+              pointBorderColor: '#ffffff'
+          }]
+      };
+
+      window.accountBalanceMiniChart = new Chart(ctx, {
+          type: 'line',
+          data: balanceData,
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false
+                  },
+                  tooltip: {
+                      enabled: false
+                  }
+              },
+              scales: {
+                  x: {
+                      display: false,
+                      grid: {
+                          display: false
+                      }
+                  },
+                  y: {
+                      display: false,
+                      grid: {
+                          display: false
+                      }
+                  }
+              },
+              elements: {
+                  point: {
+                      hoverRadius: 6
+                  }
+              },
+              interaction: {
+                  intersect: false,
+                  mode: 'nearest'
+              }
+          }
+      });
+  }
+
+  // Filter functions for charts
+  function filterNetworkChart(period) {
+      // In real app, this would fetch new data based on period
+      console.log('Filtering network chart for period:', period);
+      // renderNetworkPerformanceChart(); // Re-render with new data
+  }
+
+  function filterSalesChart(period) {
+      // In real app, this would fetch new data based on period
+      console.log('Filtering sales chart for period:', period);
+      // renderSalesAnalyticsChart(); // Re-render with new data
   }
 
   // Auto-refresh charts every 5 minutes

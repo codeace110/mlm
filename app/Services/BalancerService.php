@@ -6,53 +6,81 @@ use App\Models\User;
 use App\Models\BinaryTree;
 use App\Models\Earning;
 use App\Models\BonusSettings;
+use Illuminate\Support\Facades\DB;
 
 class BalancerService
 {
     public function processPairs(User $user)
     {
-        $tree = BinaryTree::where('user_id', $user->id)->first();
-        if (!$tree) {
-            return;
-        }
+        DB::transaction(function () use ($user) {
+            $tree = BinaryTree::lockForUpdate()->where('user_id', $user->id)->first();
+            if (!$tree) return;
 
-        $settings = BonusSettings::first();
-        if (!$settings) {
-            return;
-        }
+            $settings = BonusSettings::first();
+            if (!$settings) return;
 
-        $pairBonus = $settings->pair_bonus_amount;
-        $ratio = $this->parseRatio($settings->balancer_ratio);
+            $pairBonus = $settings->pair_bonus_amount;
+            $ratio = $this->parseRatio($settings->balancer_ratio);
 
-        $pairs = $this->calculatePairs($tree->left_volume, $tree->right_volume, $ratio);
-        $bonusAmount = $pairs * $pairBonus;
+            // ---- 1. Direct Pairs @ 100% ----
+            $directPairs = $this->calculatePairs($tree->left_volume, $tree->right_volume, $ratio);
+            $directBonus = $directPairs * $pairBonus;
 
-        if ($bonusAmount > 0) {
-            Earning::create([
-                'user_id' => $user->id,
-                'amount' => $bonusAmount,
-                'type' => 'pair',
-                'description' => "Pair bonus for {$pairs} pairs with {$settings->balancer_ratio} balancer",
-                'status' => 'pending',
-            ]);
+            if ($directBonus > 0) {
+                $earning = Earning::create([
+                    'user_id' => $user->id,
+                    'amount' => $directBonus,
+                    'type' => 'pair',
+                    'description' => "Direct pair bonus: {$directPairs} pairs at 100%",
+                    'status' => 'pending',
+                ]);
 
-            // Trigger matching bonus for uplines
-            $this->awardMatchingBonus($user, $bonusAmount);
+                // Create notification for direct pair bonus
+                $notificationService = new \App\Services\NotificationService();
+                $notificationService->notifyPairMatching($user, $directPairs, $directBonus);
 
-            // Update volumes
-            $leftUsed = min($tree->left_volume, $pairs * $ratio['left']);
-            $rightUsed = min($tree->right_volume, $pairs * $ratio['right']);
+                $this->awardMatchingBonus($user, $directBonus);
 
-            $tree->update([
-                'left_volume' => $tree->left_volume - $leftUsed,
-                'right_volume' => $tree->right_volume - $rightUsed,
-            ]);
+                $tree->left_volume -= $directPairs * $ratio['left'];
+                $tree->right_volume -= $directPairs * $ratio['right'];
+            }
 
-            // Carryover is the remaining unpaired
-            $tree->carryover_left = $tree->left_volume;
-            $tree->carryover_right = $tree->right_volume;
+            // ---- 2. Spillover Pairs @ 20% ----
+            $spilloverPairs = $this->calculatePairs($tree->left_spillover, $tree->right_spillover, $ratio);
+            $spilloverBonus = $spilloverPairs * $pairBonus * 0.20; // 20%
+
+            if ($spilloverBonus > 0) {
+                $earning = Earning::create([
+                    'user_id' => $user->id,
+                    'amount' => $spilloverBonus,
+                    'type' => 'spillover',
+                    'description' => "Spillover pair bonus: {$spilloverPairs} pairs at 20%",
+                    'status' => 'pending',
+                ]);
+
+                // Create notification for spillover bonus
+                $notificationService = new \App\Services\NotificationService();
+                $notificationService->createNotification(
+                    $user->id,
+                    'info',
+                    'Spillover Bonus Earned',
+                    "You earned ₱" . number_format($spilloverBonus, 2) . " from {$spilloverPairs} spillover pairs.",
+                    'hand-holding-usd',
+                    'info',
+                    ['pairs' => $spilloverPairs, 'bonus_amount' => $spilloverBonus]
+                );
+
+                $this->awardMatchingBonus($user, $spilloverBonus);
+
+                $tree->left_spillover -= $spilloverPairs * $ratio['left'];
+                $tree->right_spillover -= $spilloverPairs * $ratio['right'];
+            }
+
+            // ---- 3. Update carryovers ----
+            $tree->carryover_left = $tree->left_volume + $tree->left_spillover;
+            $tree->carryover_right = $tree->right_volume + $tree->right_spillover;
             $tree->save();
-        }
+        });
     }
 
     private function parseRatio(string $ratioStr): array
@@ -63,34 +91,38 @@ class BalancerService
 
     private function calculatePairs(float $left, float $right, array $ratio): int
     {
-        $pairs = min(floor($left / $ratio['left']), floor($right / $ratio['right']));
-        return $pairs;
+        return min(
+            floor($left / $ratio['left']),
+            floor($right / $ratio['right'])
+        );
     }
 
     private function awardMatchingBonus(User $user, float $pairAmount)
     {
         $settings = BonusSettings::first();
-        if (!$settings) {
-            return;
-        }
+        if (!$settings) return;
 
         $matchingPercent = $settings->matching_bonus_percent;
+        if ($matchingPercent <= 0) return;
+
         $matchingAmount = $pairAmount * ($matchingPercent / 100);
 
         $current = $user;
         while ($current->sponsor_id) {
             $upline = User::find($current->sponsor_id);
-            if (!$upline) {
-                break;
-            }
+            if (!$upline) break;
 
-            Earning::create([
+            $matchingEarning = Earning::create([
                 'user_id' => $upline->id,
                 'amount' => $matchingAmount,
                 'type' => 'matching',
                 'description' => "Matching bonus for downline {$user->name}'s pair earnings",
                 'status' => 'pending',
             ]);
+
+            // Create notification for matching bonus
+            $notificationService = new \App\Services\NotificationService();
+            $notificationService->notifyMatchingBonus($upline, $user, $matchingAmount);
 
             $current = $upline;
         }

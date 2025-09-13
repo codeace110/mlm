@@ -26,9 +26,7 @@ use App\Http\Controllers\Admin\GenealogyController;
 |
 */
 
-Route::get('/', function () {
-    return view('home');
-});
+Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 
 // for user dashboard Routes
@@ -63,9 +61,39 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 
     Route::get('/dashboard/network', [DashboardController::class, 'network'])->name('dashboard.network');
 
-    Route::get('/dashboard/notification', function () {
-        return view('DashboardNotification');
-    })->name('dashboard.notification');
+    Route::get('/dashboard/notification', [DashboardController::class, 'notification'])->name('dashboard.notification');
+});
+
+// Notification Routes
+Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
+    Route::post('/notifications/{notification}/read', function (\App\Models\Notification $notification) {
+        if ($notification->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $notification->markAsRead();
+        return response()->json(['success' => true]);
+    })->name('notifications.read');
+
+    Route::delete('/notifications/{notification}', function (\App\Models\Notification $notification) {
+        if ($notification->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->deleteNotification($notification->id, auth()->id());
+        return response()->json(['success' => true]);
+    })->name('notifications.delete');
+
+    Route::post('/notifications/mark-all-read', function () {
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->markAllAsRead(auth()->id());
+        return response()->json(['success' => true]);
+    })->name('notifications.mark-all-read');
+
+    Route::post('/notifications/delete-all-read', function () {
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->deleteAllRead(auth()->id());
+        return response()->json(['success' => true]);
+    })->name('notifications.delete-all-read');
 });
 
 // Admin dashboard Routes

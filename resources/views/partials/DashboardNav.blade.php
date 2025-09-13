@@ -273,8 +273,17 @@
               </a>
             </li>
             <li class="nav-item dropdown pe-2 d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body p-0" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fa fa-bell cursor-pointer"></i>
+              <a href="{{ route('dashboard.notification') }}" class="nav-link text-body p-0 position-relative" title="Notifications">
+                <i class="fa fa-bell cursor-pointer fa-lg"></i>
+                @php
+                  $notificationService = new \App\Services\NotificationService();
+                  $unreadCount = $notificationService->getUnreadCount(auth()->id());
+                @endphp
+                @if($unreadCount > 0)
+                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle badge-circle rounded-pill" style="font-size: 0.65rem; min-width: 20px; height: 20px; line-height: 1.2; font-weight: 600;">
+                  {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                </span>
+                @endif
               </a>
               <ul class="dropdown-menu  dropdown-menu-end  px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
                 <li class="mb-2">

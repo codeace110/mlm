@@ -13,6 +13,7 @@ use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use App\Services\ReferralCodeService;
 use App\Services\BinaryTreeService;
+use App\Services\NotificationService;
 
 class RegisteredUserController extends Controller
 {
@@ -58,6 +59,10 @@ class RegisteredUserController extends Controller
         // Place in binary tree
         $binaryTreeService = new BinaryTreeService();
         $binaryTreeService->placeUserInTree($user, $sponsor);
+
+        // Create notification for sponsor
+        $notificationService = new NotificationService();
+        $notificationService->notifyNewReferral($sponsor, $user);
 
         event(new Registered($user));
         Auth::login($user);
