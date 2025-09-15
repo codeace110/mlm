@@ -7,9 +7,7 @@ use App\Models\User;
 use App\Models\Earning;
 use App\Models\Withdrawal;
 use App\Models\ReferralCode;
-use App\Models\BinaryTree;
 use Illuminate\Support\Facades\Auth;
-use App\Services\BinaryTreeService;
 use App\Services\NotificationService;
 
 class DashboardController extends Controller
@@ -58,10 +56,6 @@ class DashboardController extends Controller
             ->groupBy('type')
             ->get();
 
-        // Get binary tree data
-        $binaryTreeService = new BinaryTreeService();
-        $binaryTreeData = $binaryTreeService->getTreeData($user);
-
         // Get user's referral codes
         $referralCodes = ReferralCode::where('assigned_to', $user->id)->get();
 
@@ -86,7 +80,6 @@ class DashboardController extends Controller
             'recentEarnings',
             'networkStats',
             'earningsByType',
-            'binaryTreeData',
             'referralCodes',
             'downlineGrowthPercent',
             'balanceGrowthPercent',
@@ -129,17 +122,25 @@ class DashboardController extends Controller
         }
 
         $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
-        $left_volume = $binaryTree ? $binaryTree->left_volume : 0;
-        $right_volume = $binaryTree ? $binaryTree->right_volume : 0;
+        $total_left_volume = $binaryTree ? $binaryTree->total_left_volume : 0;
+        $total_right_volume = $binaryTree ? $binaryTree->total_right_volume : 0;
+        $left_consumed = $binaryTree ? $binaryTree->left_consumed : 0;
+        $right_consumed = $binaryTree ? $binaryTree->right_consumed : 0;
         $left_child_id = $binaryTree ? $binaryTree->left_child_id : null;
         $right_child_id = $binaryTree ? $binaryTree->right_child_id : null;
+
+        // Calculate effective volumes (carryover)
+        $effective_left = $total_left_volume - $left_consumed;
+        $effective_right = $total_right_volume - $right_consumed;
 
         $node = [
             'name' => $user->name,
             'id' => $user->id,
             'level' => $depth + 1,
-            'left_volume' => $left_volume,
-            'right_volume' => $right_volume,
+            'left_volume' => $total_left_volume, // Keep for backward compatibility in view
+            'right_volume' => $total_right_volume,
+            'carryover_left' => $effective_left, // Effective = carryover
+            'carryover_right' => $effective_right,
             'profile_image' => $user->profile_image,
             'children' => [null, null] // Initialize with null placeholders for left and right
         ];

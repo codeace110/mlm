@@ -92,6 +92,11 @@ class User extends Authenticatable
         return $this->hasMany(Earning::class);
     }
 
+    public function bonuses()
+    {
+        return $this->hasMany(Bonus::class);
+    }
+
     public function withdrawals()
     {
         return $this->hasMany(Withdrawal::class);

@@ -40,18 +40,31 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-                <!-- Referral Code (required) -->
+                <!-- Admin Code (required) -->
         <div class="mt-4">
-            <x-input-label for="referral_code" :value="__('Referral Code')" />
+            <x-input-label for="admin_code" :value="__('Admin Code')" />
 
-            <x-text-input id="referral_code" class="block mt-1 w-full"
+            <x-text-input id="admin_code" class="block mt-1 w-full"
                             type="text"
-                            name="referral_code"
-                            :value="old('referral_code')"
+                            name="admin_code"
+                            :value="old('admin_code')"
                             required
-                            autocomplete="referral_code" />
+                            autocomplete="admin_code" />
 
-            <x-input-error :messages="$errors->get('referral_code')" class="mt-2" />
+            <x-input-error :messages="$errors->get('admin_code')" class="mt-2" />
+        </div>
+
+        <!-- Preferred Side (optional) -->
+        <div class="mt-4">
+            <x-input-label for="preferred_side" :value="__('Preferred Side (Optional)')" />
+
+            <select id="preferred_side" name="preferred_side" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                <option value="">No preference</option>
+                <option value="left" {{ old('preferred_side') === 'left' ? 'selected' : '' }}>Left</option>
+                <option value="right" {{ old('preferred_side') === 'right' ? 'selected' : '' }}>Right</option>
+            </select>
+
+            <x-input-error :messages="$errors->get('preferred_side')" class="mt-2" />
         </div>
 
 

@@ -12,8 +12,13 @@ class GenealogyController extends Controller
         $genealogy = User::with('sponsor')->get()->map(function ($user) {
             $user->level = $this->calculateLevel($user);
             $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
-            $user->left_volume = $binaryTree ? $binaryTree->left_volume : 0;
-            $user->right_volume = $binaryTree ? $binaryTree->right_volume : 0;
+            $user->total_left_volume = $binaryTree ? $binaryTree->total_left_volume : 0;
+            $user->total_right_volume = $binaryTree ? $binaryTree->total_right_volume : 0;
+            $user->left_consumed = $binaryTree ? $binaryTree->left_consumed : 0;
+            $user->right_consumed = $binaryTree ? $binaryTree->right_consumed : 0;
+            $user->level_index = $binaryTree ? $binaryTree->level_index : 1;
+            $user->effective_left = $binaryTree ? ($binaryTree->total_left_volume - $binaryTree->left_consumed) : 0;
+            $user->effective_right = $binaryTree ? ($binaryTree->total_right_volume - $binaryTree->right_consumed) : 0;
             return $user;
         });
         return view('admin.genealogy.index', compact('genealogy'));
@@ -29,8 +34,13 @@ class GenealogyController extends Controller
             ->paginate(20)
             ->through(function ($user) {
                 $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
-                $user->left_volume = $binaryTree ? $binaryTree->left_volume : 0;
-                $user->right_volume = $binaryTree ? $binaryTree->right_volume : 0;
+                $user->total_left_volume = $binaryTree ? $binaryTree->total_left_volume : 0;
+                $user->total_right_volume = $binaryTree ? $binaryTree->total_right_volume : 0;
+                $user->left_consumed = $binaryTree ? $binaryTree->left_consumed : 0;
+                $user->right_consumed = $binaryTree ? $binaryTree->right_consumed : 0;
+                $user->level_index = $binaryTree ? $binaryTree->level_index : 1;
+                $user->effective_left = $binaryTree ? ($binaryTree->total_left_volume - $binaryTree->left_consumed) : 0;
+                $user->effective_right = $binaryTree ? ($binaryTree->total_right_volume - $binaryTree->right_consumed) : 0;
                 return $user;
             });
 
@@ -56,8 +66,13 @@ class GenealogyController extends Controller
             'name' => $user->name,
             'id' => $user->id,
             'level' => $depth + 1,
-            'left_volume' => $binaryTree->left_volume ?? 0,
-            'right_volume' => $binaryTree->right_volume ?? 0,
+            'total_left_volume' => $binaryTree->total_left_volume ?? 0,
+            'total_right_volume' => $binaryTree->total_right_volume ?? 0,
+            'left_consumed' => $binaryTree->left_consumed ?? 0,
+            'right_consumed' => $binaryTree->right_consumed ?? 0,
+            'effective_left' => ($binaryTree->total_left_volume ?? 0) - ($binaryTree->left_consumed ?? 0),
+            'effective_right' => ($binaryTree->total_right_volume ?? 0) - ($binaryTree->right_consumed ?? 0),
+            'level_index' => $binaryTree->level_index ?? 1,
             'profile_image' => $user->profile_image,
             'children' => []
         ];

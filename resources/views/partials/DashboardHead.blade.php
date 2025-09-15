@@ -185,8 +185,6 @@
   <script defer data-site="YOUR_DOMAIN_HERE" src="https://api.nepcha.com/js/nepcha-analytics.js"></script>
 
   
-<!-- 
-    {{-- Styles --}}
-  @vite(['resources/css/soft-ui-dashboard.css?v=1.1.0'])
-  @stack('styles') -->
+{{-- @vite(['resources/css/soft-ui-dashboard.css?v=1.1.0']) --}}
+{{-- @stack('styles') --}}
 </head>

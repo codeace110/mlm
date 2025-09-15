@@ -23,6 +23,43 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Color Legend -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-2">Node Color Legend</h6>
+                                    <div class="row text-center">
+                                        <div class="col-md-2">
+                                            <div style="width: 20px; height: 20px; background: #2196F3; border-radius: 50%; display: inline-block;"></div>
+                                            <div class="small mt-1">You (Root)</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div style="width: 20px; height: 20px; background: #FFD700; border-radius: 50%; display: inline-block;"></div>
+                                            <div class="small mt-1">Direct (No Carryover)</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div style="width: 20px; height: 20px; background: #FF6B35; border-radius: 50%; display: inline-block;"></div>
+                                            <div class="small mt-1">Direct (With Carryover)</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div style="width: 20px; height: 20px; background: #4CAF50; border-radius: 50%; display: inline-block;"></div>
+                                            <div class="small mt-1">Spillover (No Carryover)</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div style="width: 20px; height: 20px; background: #8B4513; border-radius: 50%; display: inline-block;"></div>
+                                            <div class="small mt-1">Spillover (With Carryover)</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div style="width: 20px; height: 20px; background: #f0f0f0; border: 2px solid #ccc; border-radius: 50%; display: inline-block;"></div>
+                                            <div class="small mt-1">Empty Slot</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Network Statistics -->
                     <div class="row mb-4">
                         <div class="col-md-3">
@@ -199,13 +236,23 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
         ctx.beginPath();
         ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
 
-        // Color based on depth: 0 (user) - blue, 1 (direct) - yellow, >1 (spillover) - green
+        // Color based on depth and carryover status
         if (depth === 0) {
             ctx.fillStyle = '#2196F3'; // Blue for current user
         } else if (depth === 1) {
-            ctx.fillStyle = '#FFD700'; // Yellow for direct referrals
+            // Direct referrals: check for carryover
+            if ((node.carryover_left && node.carryover_left > 0) || (node.carryover_right && node.carryover_right > 0)) {
+                ctx.fillStyle = '#FF6B35'; // Orange-red for direct with carryover
+            } else {
+                ctx.fillStyle = '#FFD700'; // Yellow for direct without carryover
+            }
         } else {
-            ctx.fillStyle = '#4CAF50'; // Green for spillover
+            // Spillover nodes: check for carryover
+            if ((node.carryover_left && node.carryover_left > 0) || (node.carryover_right && node.carryover_right > 0)) {
+                ctx.fillStyle = '#8B4513'; // Brown for spillover with carryover
+            } else {
+                ctx.fillStyle = '#4CAF50'; // Green for spillover without carryover
+            }
         }
         ctx.fill();
         ctx.strokeStyle = '#333';
@@ -222,6 +269,13 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
         ctx.fillStyle = '#666';
         ctx.font = '9px Arial';
         ctx.fillText('L:' + node.left_volume + ' R:' + node.right_volume, x, y + nodeRadius + 28);
+
+        // Display carryover information
+        if (node.carryover_left || node.carryover_right) {
+            ctx.fillStyle = '#999';
+            ctx.font = '8px Arial';
+            ctx.fillText('Carry: L:' + (node.carryover_left || 0) + ' R:' + (node.carryover_right || 0), x, y + nodeRadius + 40);
+        }
     } else {
         // Empty placeholder node
         ctx.beginPath();

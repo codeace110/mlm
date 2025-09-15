@@ -11,6 +11,7 @@ class BinaryTree extends Model
 
     protected $fillable = [
         'user_id',
+        'parent_id',
         'left_child_id',
         'right_child_id',
         'left_volume',
@@ -19,6 +20,13 @@ class BinaryTree extends Model
         'right_spillover',
         'carryover_left',
         'carryover_right',
+        'total_left_volume',
+        'total_right_volume',
+        'left_consumed',
+        'right_consumed',
+        'level_index',
+        'reward_count',
+        'direct_pairs_paid',
     ];
 
     protected $casts = [
@@ -28,6 +36,13 @@ class BinaryTree extends Model
         'right_spillover' => 'decimal:2',
         'carryover_left' => 'decimal:2',
         'carryover_right' => 'decimal:2',
+        'total_left_volume' => 'integer',
+        'total_right_volume' => 'integer',
+        'left_consumed' => 'integer',
+        'right_consumed' => 'integer',
+        'level_index' => 'integer',
+        'reward_count' => 'integer',
+        'direct_pairs_paid' => 'integer',
     ];
 
     public function user()

@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\NetworkController;
 use App\Http\Controllers\Admin\EarningController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\GenealogyController;
+use App\Http\Controllers\Admin\AdminCodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -111,7 +112,7 @@ Route::middleware(['auth', 'is_admin'])
         Route::post('/bonus_rules/{rule}/deactivate', [BonusRuleController::class, 'deactivate'])->name('bonus_rules.deactivate');
         Route::get('/bonus-settings', [BonusSettingsController::class, 'index'])->name('bonus_settings.index');
         Route::put('/bonus-settings', [BonusSettingsController::class, 'update'])->name('bonus_settings.update');
-        Route::resource('referral_codes', ReferralCodeController::class);
+        Route::resource('admin_codes', AdminCodeController::class);
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');

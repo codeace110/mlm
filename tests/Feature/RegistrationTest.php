@@ -5,53 +5,52 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
-use App\Models\ReferralCode;
-use App\Services\ReferralCodeService;
+use App\Models\AdminCode;
+use App\Services\AdminCodeService;
 
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_with_valid_referral_code()
+    public function test_registration_with_valid_admin_code()
     {
-        $admin = User::factory()->create();
         $distributor = User::factory()->create();
-        $service = new ReferralCodeService();
-
-        $codes = $service->generateCodes($admin, 1);
-        $code = $codes[0];
-        $service->assignCodeToDistributor($code, $distributor);
+        $adminCode = AdminCode::create([
+            'code' => 'TESTCODE123',
+            'distributor_id' => $distributor->id,
+            'status' => 'issued',
+        ]);
 
         $response = $this->post('/register', [
             'name' => 'New User',
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'referral_code' => $code->code,
+            'admin_code' => 'TESTCODE123',
         ]);
 
         $response->assertRedirect('/dashboard');
         $this->assertDatabaseHas('users', ['email' => 'new@example.com']);
-        $code->refresh();
-        $this->assertEquals('used', $code->status);
+        $adminCode->refresh();
+        $this->assertEquals('used', $adminCode->status);
     }
 
-    public function test_registration_with_invalid_referral_code()
+    public function test_registration_with_invalid_admin_code()
     {
         $response = $this->post('/register', [
             'name' => 'New User',
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'referral_code' => 'INVALID',
+            'admin_code' => 'INVALID',
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('referral_code');
+        $response->assertSessionHasErrors('admin_code');
         $this->assertDatabaseMissing('users', ['email' => 'new@example.com']);
     }
 
-    public function test_registration_requires_referral_code()
+    public function test_registration_requires_admin_code()
     {
         $response = $this->post('/register', [
             'name' => 'New User',
@@ -61,6 +60,6 @@ class RegistrationTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('referral_code');
+        $response->assertSessionHasErrors('admin_code');
     }
 }

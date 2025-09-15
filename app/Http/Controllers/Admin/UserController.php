@@ -41,15 +41,13 @@ class UserController extends Controller
 
     public function generateReferralCode(User $user)
     {
-        $code = \App\Models\ReferralCode::create([
+        $code = \App\Models\AdminCode::create([
             'code' => strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)),
-            'assigned_to' => $user->id,
-            'generated_by' => auth()->id(),
-            'status' => 'available',
-            'expires_at' => now()->addDays(30),
+            'distributor_id' => $user->id,
+            'status' => 'unused',
         ]);
 
-        return back()->with('success', 'Referral code generated: ' . $code->code);
+        return back()->with('success', 'Admin code generated: ' . $code->code);
     }
 
 }

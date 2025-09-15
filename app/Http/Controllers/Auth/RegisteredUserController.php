@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
-use App\Services\ReferralCodeService;
-use App\Services\BinaryTreeService;
+use App\Services\AdminCodeService;
 use App\Services\NotificationService;
+use App\Services\BinaryBalancerService;
 
 class RegisteredUserController extends Controller
 {
@@ -36,14 +36,15 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
-            'referral_code' => 'required|string',
+            'admin_code' => 'required|string',
+            'preferred_side' => 'nullable|in:left,right',
         ]);
 
-        $referralCodeService = new ReferralCodeService();
-        $sponsor = $referralCodeService->validateAndUseCode($request->referral_code); // Validate first
+        $adminCodeService = new AdminCodeService();
+        $sponsor = $adminCodeService->validateAndUseCode($request->admin_code); // Validate first
 
         if (!$sponsor) {
-            return back()->withErrors(['referral_code' => 'Invalid or used referral code'])->withInput();
+            return back()->withErrors(['admin_code' => 'Invalid or used admin code'])->withInput();
         }
 
         $user = User::create([
@@ -54,11 +55,11 @@ class RegisteredUserController extends Controller
         ]);
 
         // Now mark as used
-        $referralCodeService->validateAndUseCode($request->referral_code, $user);
+        $adminCodeService->validateAndUseCode($request->admin_code, $user);
 
-        // Place in binary tree
-        $binaryTreeService = new BinaryTreeService();
-        $binaryTreeService->placeUserInTree($user, $sponsor);
+        // Place user in binary tree
+        $binaryBalancerService = new BinaryBalancerService();
+        $binaryBalancerService->placeUser($user, $sponsor, $request->preferred_side);
 
         // Create notification for sponsor
         $notificationService = new NotificationService();

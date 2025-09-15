@@ -29,9 +29,6 @@
                     <a href="{{ route('admin.users.index') }}" class="nav-link text-white {{ request()->routeIs('admin.users.*') ? 'active-link' : '' }}">Users</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('admin.packages.index') }}" class="nav-link text-white {{ request()->routeIs('admin.packages.*') ? 'active-link' : '' }}">Packages</a>
-                </li>
-                <li class="nav-item">
                     <a href="{{ route('admin.bonus_rules.index') }}" class="nav-link text-white {{ request()->routeIs('admin.bonus_rules.*') ? 'active-link' : '' }}">Bonus Rules</a>
                 </li>
                 <li class="nav-item">

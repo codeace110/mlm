@@ -9,19 +9,19 @@ test('registration screen can be rendered', function () {
 });
 
 test('new users can register', function () {
-    $admin = \App\Models\User::factory()->create(['is_admin' => true]);
     $distributor = \App\Models\User::factory()->create();
-    $service = new \App\Services\ReferralCodeService();
-    $codes = $service->generateCodes($admin, 1);
-    $code = $codes[0];
-    $service->assignCodeToDistributor($code, $distributor);
+    $adminCode = \App\Models\AdminCode::create([
+        'code' => 'TESTCODE123',
+        'distributor_id' => $distributor->id,
+        'status' => 'issued',
+    ]);
 
     $response = $this->post('/register', [
         'name' => 'Test User',
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-        'referral_code' => $code->code,
+        'admin_code' => 'TESTCODE123',
     ]);
 
     $this->assertAuthenticated();

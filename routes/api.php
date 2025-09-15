@@ -17,3 +17,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/binary/place-user', [App\Http\Controllers\BinaryController::class, 'placeUser']);
+    Route::get('/binary/tree-info', [App\Http\Controllers\BinaryController::class, 'getTreeInfo']);
+    Route::post('/binary/process-levels', [App\Http\Controllers\BinaryController::class, 'processLevels']);
+});

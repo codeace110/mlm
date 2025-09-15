@@ -11,6 +11,33 @@
                     <h6 class="mb-0">Genealogy Network</h6>
                 </div>
                 <div class="card-body">
+                    <!-- Color Legend -->
+                    <div class="mb-3">
+                        <h6 class="mb-2">Node Color Legend</h6>
+                        <div class="row text-center">
+                            <div class="col-md-2">
+                                <div style="width: 20px; height: 20px; background: #2196F3; border-radius: 50%; display: inline-block;"></div>
+                                <div class="small mt-1">Root User</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div style="width: 20px; height: 20px; background: #FFD700; border-radius: 50%; display: inline-block;"></div>
+                                <div class="small mt-1">Direct (Fully Consumed)</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div style="width: 20px; height: 20px; background: #FF6B35; border-radius: 50%; display: inline-block;"></div>
+                                <div class="small mt-1">Direct (Has Unconsumed)</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div style="width: 20px; height: 20px; background: #4CAF50; border-radius: 50%; display: inline-block;"></div>
+                                <div class="small mt-1">Spillover (Fully Consumed)</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div style="width: 20px; height: 20px; background: #8B4513; border-radius: 50%; display: inline-block;"></div>
+                                <div class="small mt-1">Spillover (Has Unconsumed)</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="network-tree" class="text-center">
                         <svg width="100%" height="800" style="max-width: 1200px; height: auto;"></svg>
                         <script>
@@ -71,13 +98,27 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr("transform", d => `translate(${source.y0},${source.x0})`)
             .on("click", clicked);
 
-        // Background circle for color based on balance
+        // Background circle for color based on depth and carryover status
         nodeEnter.append("circle")
             .attr("r", 10)
             .attr("class", "node-bg")
             .attr("fill", d => {
-                const balance = Math.abs(d.data.left_volume - d.data.right_volume);
-                return balance < 100 ? "#4CAF50" : "#f44336";
+                // Root node (depth 0)
+                if (d.depth === 0) {
+                    return "#2196F3"; // Blue for current user
+                }
+                // Direct referrals (depth 1)
+                else if (d.depth === 1) {
+                    const hasUnconsumed = (d.data.left_consumed < d.data.total_left_volume) ||
+                                         (d.data.right_consumed < d.data.total_right_volume);
+                    return hasUnconsumed ? "#FF6B35" : "#FFD700"; // Orange-red with unconsumed, Yellow without
+                }
+                // Spillover nodes (depth > 1)
+                else {
+                    const hasUnconsumed = (d.data.left_consumed < d.data.total_left_volume) ||
+                                         (d.data.right_consumed < d.data.total_right_volume);
+                    return hasUnconsumed ? "#8B4513" : "#4CAF50"; // Brown with unconsumed, Green without
+                }
             })
             .attr("stroke", "#fff")
             .attr("stroke-width", 2);
@@ -106,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr("text-anchor", "middle")
             .attr("font-size", "8px")
             .attr("fill", "#666")
-            .text(d => `(L:${d.data.left_volume}, R:${d.data.right_volume})`);
+            .text(d => `(L:${d.data.effective_left}, R:${d.data.effective_right})`);
 
         nodeEnter.append("text")
             .attr("dy", 50)
@@ -114,20 +155,34 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr("text-anchor", "middle")
             .attr("font-size", "7px")
             .attr("fill", "#999")
-            .text(d => d.data.carryover_left || d.data.carryover_right ?
-                `Carryover: L:${d.data.carryover_left || 0}, R:${d.data.carryover_right || 0}` : '');
+            .text(d => (d.data.left_consumed < d.data.total_left_volume) || (d.data.right_consumed < d.data.total_right_volume) ?
+                `Unconsumed: L:${d.data.effective_left}, R:${d.data.effective_right}` : '');
 
         const nodeUpdate = nodes.merge(nodeEnter);
         nodeUpdate.transition()
             .duration(750)
             .attr("transform", d => `translate(${d.y},${d.x})`);
 
-        // Update background circle
+        // Update background circle with new color logic
         nodeUpdate.select(".node-bg")
             .attr("r", 10)
             .attr("fill", d => {
-                const balance = Math.abs(d.data.left_volume - d.data.right_volume);
-                return balance < 100 ? "#4CAF50" : "#f44336";
+                // Root node (depth 0)
+                if (d.depth === 0) {
+                    return "#2196F3"; // Blue for current user
+                }
+                // Direct referrals (depth 1)
+                else if (d.depth === 1) {
+                    const hasUnconsumed = (d.data.left_consumed < d.data.total_left_volume) ||
+                                         (d.data.right_consumed < d.data.total_right_volume);
+                    return hasUnconsumed ? "#FF6B35" : "#FFD700"; // Orange-red with unconsumed, Yellow without
+                }
+                // Spillover nodes (depth > 1)
+                else {
+                    const hasUnconsumed = (d.data.left_consumed < d.data.total_left_volume) ||
+                                         (d.data.right_consumed < d.data.total_right_volume);
+                    return hasUnconsumed ? "#8B4513" : "#4CAF50"; // Brown with unconsumed, Green without
+                }
             })
             .attr("stroke", "#fff")
             .attr("stroke-width", 2);
@@ -137,10 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr("href", d => d.data.profile_image ? `images/profiles/${d.data.profile_image}` : null)
             .style("opacity", d => d.data.profile_image ? 1 : 0);
 
-        // Update carryover text
+        // Update unconsumed text
         nodeUpdate.selectAll("text:nth-child(4)")
-            .text(d => d.data.carryover_left || d.data.carryover_right ?
-                `Carryover: L:${d.data.carryover_left || 0}, R:${d.data.carryover_right || 0}` : '');
+            .text(d => (d.data.left_consumed < d.data.total_left_volume) || (d.data.right_consumed < d.data.total_right_volume) ?
+                `Unconsumed: L:${d.data.effective_left}, R:${d.data.effective_right}` : '');
 
         nodes.exit().transition()
             .duration(750)
