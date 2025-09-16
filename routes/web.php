@@ -113,6 +113,8 @@ Route::middleware(['auth', 'is_admin'])
         Route::get('/bonus-settings', [BonusSettingsController::class, 'index'])->name('bonus_settings.index');
         Route::put('/bonus-settings', [BonusSettingsController::class, 'update'])->name('bonus_settings.update');
         Route::resource('admin_codes', AdminCodeController::class);
+        Route::post('/admin_codes/generate', [AdminCodeController::class, 'generate'])->name('admin_codes.generate');
+        Route::post('/admin_codes/{code}/assign', [AdminCodeController::class, 'assign'])->name('admin_codes.assign');
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
