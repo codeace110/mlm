@@ -201,7 +201,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **Marjo** - Lead Developer & Project Manager
-- **AI Assistant** - Code Generation & Documentation
+- **jayson** - bystander
+- **aldren** - tester
+- **adrian** - coffee maker
+
 - **CodeAce110** - Repository Owner & Architecture
 
 ## 🎯 Getting Started

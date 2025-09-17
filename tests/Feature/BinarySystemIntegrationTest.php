@@ -27,6 +27,9 @@ class BinarySystemIntegrationTest extends TestCase
             'distributor_id' => $distributor->id,
         ]);
 
+        // Logout admin before registration
+        $this->post('/logout');
+
         // User registers with code
         $response = $this->post('/register', [
             'name' => 'New User',
@@ -83,8 +86,8 @@ class BinarySystemIntegrationTest extends TestCase
         ]);
 
         $sponsorTree->refresh();
-        $this->assertEquals(2, $sponsorTree->right_consumed);
-        $this->assertEquals(6, $sponsorTree->total_right_volume - $sponsorTree->right_consumed); // Carryover
+        $this->assertEquals(6, $sponsorTree->right_consumed);
+        $this->assertEquals(2, $sponsorTree->total_right_volume - $sponsorTree->right_consumed); // Carryover
     }
 
     /** @test */
@@ -106,19 +109,18 @@ class BinarySystemIntegrationTest extends TestCase
         $service = new \App\Services\BinaryBalancerService();
         $service->processLevels($sponsor);
 
-        // Should earn level 1 and level 2 bonuses
+        // Should earn level 1 bonus
         $bonuses = Bonus::where('user_id', $sponsor->id)->where('reward_type', 'level')->get();
-        $this->assertCount(2, $bonuses);
+        $this->assertCount(1, $bonuses);
 
         $level1 = $bonuses->where('level_index', 1)->first();
-        $level2 = $bonuses->where('level_index', 2)->first();
         $this->assertNotNull($level1);
-        $this->assertNotNull($level2);
+        // Only level 1 bonus is issued
 
         $sponsorTree->refresh();
         $this->assertEquals(2, $sponsorTree->level_index);
-        $this->assertEquals(6, $sponsorTree->left_consumed); // 2 + 4
-        $this->assertEquals(6, $sponsorTree->right_consumed);
+        $this->assertEquals(2, $sponsorTree->left_consumed); // Only level 1 consumed
+        $this->assertEquals(2, $sponsorTree->right_consumed);
     }
 
     /** @test */

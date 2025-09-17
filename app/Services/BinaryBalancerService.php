@@ -45,21 +45,19 @@ class BinaryBalancerService
         while ($current->sponsor_id) {
             $sponsor = User::find($current->sponsor_id);
 
-            DB::transaction(function() use ($sponsor, $volume, $current) {
-                $tree = BinaryTree::where('user_id', $sponsor->id)->lockForUpdate()->firstOrCreate(['user_id' => $sponsor->id]);
+            $tree = BinaryTree::where('user_id', $sponsor->id)->firstOrCreate(['user_id' => $sponsor->id]);
 
-                // Determine position (this depends on your placement data)
-                // For now, assume we have a way to determine if current is left or right of sponsor
-                $position = $this->getPositionRelativeToSponsor($current, $sponsor);
+            // Determine position (this depends on your placement data)
+            // For now, assume we have a way to determine if current is left or right of sponsor
+            $position = $this->getPositionRelativeToSponsor($current, $sponsor);
 
-                if ($position === 'left') {
-                    $tree->total_left_volume += $volume;
-                } else {
-                    $tree->total_right_volume += $volume;
-                }
+            if ($position === 'left') {
+                $tree->total_left_volume += $volume;
+            } else {
+                $tree->total_right_volume += $volume;
+            }
 
-                $tree->save();
-            });
+            $tree->save();
 
             $current = $sponsor;
         }
@@ -71,7 +69,7 @@ class BinaryBalancerService
     public function calculateDirectBonus(User $user): void
     {
         DB::transaction(function() use ($user) {
-            $tree = BinaryTree::where('user_id', $user->id)->lockForUpdate()->firstOrCreate(['user_id' => $user->id]);
+            $tree = BinaryTree::where('user_id', $user->id)->firstOrCreate(['user_id' => $user->id]);
 
             // Count direct children
             $directLeft = User::where('sponsor_id', $user->id)->where('placement_side', 'left')->count();
@@ -112,12 +110,12 @@ class BinaryBalancerService
     public function processLevels(User $user): void
     {
         DB::transaction(function() use ($user) {
-            $tree = BinaryTree::where('user_id', $user->id)->lockForUpdate()->first();
+            $tree = BinaryTree::where('user_id', $user->id)->first();
 
             if (!$tree) return;
 
             while (true) {
-                $level = (int)$tree->level_index + 1; // Start from level 1
+                $level = (int)$tree->level_index; // Current level
                 $quota = (int)pow(2, $level); // Level 1 = 2^1 = 2, Level 2 = 2^2 = 4, etc.
 
                 $effectiveLeft = (int)$tree->total_left_volume - (int)$tree->left_consumed;
@@ -151,7 +149,7 @@ class BinaryBalancerService
     public function issueReward(User $user, string $type, ?int $levelIndex = null): Bonus
     {
         return DB::transaction(function() use ($user, $type, $levelIndex) {
-            $tree = BinaryTree::where('user_id', $user->id)->lockForUpdate()->firstOrCreate(['user_id' => $user->id]);
+            $tree = BinaryTree::where('user_id', $user->id)->firstOrCreate(['user_id' => $user->id]);
 
             if ($tree) {
                 $tree->reward_count++;
@@ -198,7 +196,7 @@ class BinaryBalancerService
         $preferredSide = $preferredSide ?? 'left';
 
         // Get sponsor's binary tree
-        $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->lockForUpdate()->first();
+        $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->first();
 
         if (!$sponsorTree) {
             // First placement for sponsor
@@ -280,26 +278,26 @@ class BinaryBalancerService
             $childTree = BinaryTree::create(['user_id' => $child->id]);
         }
 
+        // For spillover, the placement_side should be relative to the original sponsor, not the spillover parent
+        $newUser->placement_side = $side;
+
         // Try to place in child's preferred side first
         if ($side === 'left' && !$childTree->left_child_id) {
             $childTree->left_child_id = $newUser->id;
-            $newUser->placement_side = 'left';
         } elseif ($side === 'right' && !$childTree->right_child_id) {
             $childTree->right_child_id = $newUser->id;
-            $newUser->placement_side = 'right';
         } else {
             // Continue spillover recursively
             if (!$childTree->left_child_id) {
                 $childTree->left_child_id = $newUser->id;
-                $newUser->placement_side = 'left';
             } elseif (!$childTree->right_child_id) {
                 $childTree->right_child_id = $newUser->id;
-                $newUser->placement_side = 'right';
             } else {
                 // Both taken, go deeper
                 $nextChild = $side === 'left' ? User::find($childTree->left_child_id) : User::find($childTree->right_child_id);
                 if ($nextChild) {
                     $this->spilloverToChild($newUser, $nextChild, $side);
+                    return; // Don't save childTree if recursing
                 }
             }
         }
@@ -309,23 +307,34 @@ class BinaryBalancerService
 
     /**
      * Get position of a user relative to their sponsor
-     */
-    private function getPositionRelativeToSponsor(User $user, User $sponsor): string
-    {
-        // Check if user is direct child
-        $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->first();
-        if ($sponsorTree) {
-            if ($sponsorTree->left_child_id == $user->id) {
-                return 'left';
-            }
-            if ($sponsorTree->right_child_id == $user->id) {
-                return 'right';
-            }
-        }
+      */
+     private function getPositionRelativeToSponsor(User $user, User $sponsor): string
+     {
+         // Check if user is direct child
+         $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->first();
+         if ($sponsorTree) {
+             if ($sponsorTree->left_child_id == $user->id) {
+                 return 'left';
+             }
+             if ($sponsorTree->right_child_id == $user->id) {
+                 return 'right';
+             }
+         }
 
-        // If not direct, determine based on placement_side
-        return $user->placement_side ?? 'left';
-    }
+         // If user is directly sponsored by this sponsor, return user's placement_side
+         if ($user->sponsor_id == $sponsor->id) {
+             return $user->placement_side ?? 'left';
+         }
+
+         // If not direct, get the position of the direct sponsor
+         $directSponsor = User::find($user->sponsor_id);
+         if ($directSponsor) {
+             return $this->getPositionRelativeToSponsor($directSponsor, $sponsor);
+         }
+
+         // Fallback
+         return $user->placement_side ?? 'left';
+     }
 
     /**
      * Generate description for reward

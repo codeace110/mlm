@@ -11,12 +11,13 @@ class AdminCodeService
     public function validateAndUseCode(string $code, ?User $newUser = null)
     {
         return DB::transaction(function() use ($code, $newUser) {
-            $adminCode = AdminCode::where('code', $code)
+            $adminCode = AdminCode::with('distributor')
+                ->where('code', $code)
                 ->whereIn('status', ['issued', 'unused'])
                 ->lockForUpdate()
                 ->first();
 
-            if (!$adminCode) {
+            if (!$adminCode || !$adminCode->distributor) {
                 return false;
             }
 
