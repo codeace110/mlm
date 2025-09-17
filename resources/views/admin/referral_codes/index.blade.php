@@ -4,6 +4,86 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-capitalize font-weight-bold">Total Codes</p>
+                                <h5 class="font-weight-bolder mb-0">{{ $stats['total'] }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                                <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-capitalize font-weight-bold">Used Codes</p>
+                                <h5 class="font-weight-bolder mb-0">{{ $stats['used'] }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-success shadow text-center border-radius-md">
+                                <i class="ni ni-check-bold text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-capitalize font-weight-bold">Available Codes</p>
+                                <h5 class="font-weight-bolder mb-0">{{ $stats['available'] }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-info shadow text-center border-radius-md">
+                                <i class="ni ni-circle-08 text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-capitalize font-weight-bold">Assigned Codes</p>
+                                <h5 class="font-weight-bolder mb-0">{{ $stats['assigned'] }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-warning shadow text-center border-radius-md">
+                                <i class="ni ni-user-run text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -12,19 +92,19 @@
                         <div>
                             <h5 class="mb-0">Referral Codes Management</h5>
                             <p class="text-sm mb-0">
-                                Manage and generate referral codes for distributors
+                                Generate and track referral codes (50 codes per batch)
                             </p>
                         </div>
                         <div class="ms-auto my-auto mt-lg-0 mt-4">
                             <div class="ms-auto my-auto">
+                                @if($stats['available'] == 0 && $stats['assigned'] == 0)
                                 <form method="POST" action="{{ route('admin.referral_codes.generate') }}" class="d-inline">
                                     @csrf
-                                    <div class="input-group input-group-outline" style="width: 200px;">
-                                        <label class="form-label">Generate Count</label>
-                                        <input type="number" class="form-control" name="count" min="1" max="1000" value="50" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary btn-sm mt-2">Generate Codes</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">Generate 50 Codes</button>
                                 </form>
+                                @else
+                                <span class="text-muted">Cannot generate new codes until all current codes are used</span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -36,10 +116,10 @@
                                 <tr>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Code</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Status</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Assigned To</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Used By</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Generated By</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Expires</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Sponsor</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Batch</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Generated</th>
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Actions</th>
                                 </tr>
                             </thead>
@@ -59,32 +139,18 @@
                                         </span>
                                     </td>
                                     <td>
-                                        {{ $code->assignedTo ? $code->assignedTo->name : 'Unassigned' }}
-                                    </td>
-                                    <td>
                                         {{ $code->usedBy ? $code->usedBy->name : 'Not Used' }}
                                     </td>
                                     <td>
-                                        {{ $code->generatedBy ? $code->generatedBy->name : 'System' }}
+                                        {{ $code->assignedTo ? $code->assignedTo->name : 'N/A' }}
                                     </td>
                                     <td>
-                                        {{ $code->expires_at ? $code->expires_at->format('Y-m-d') : 'No Expiry' }}
+                                        {{ $code->batch_id ? '#' . $code->batch_id : 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {{ $code->created_at->format('Y-m-d') }}
                                     </td>
                                     <td class="text-center">
-                                        @if($code->status == 'available')
-                                        <form method="POST" action="{{ route('admin.referral_codes.assign', $code) }}" class="d-inline">
-                                            @csrf
-                                            <select name="distributor_id" class="form-select form-select-sm" required>
-                                                <option value="">Assign to Distributor</option>
-                                                @foreach(\App\Models\User::where('is_admin', false)->get() as $user)
-                                                <option value="{{ $user->id }}" {{ $code->assigned_to == $user->id ? 'selected' : '' }}>
-                                                    {{ $user->name }} ({{ $user->email }})
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                            <button type="submit" class="btn btn-xs btn-primary mt-1">Assign</button>
-                                        </form>
-                                        @endif
                                         <a href="{{ route('admin.referral_codes.show', $code) }}" class="btn btn-xs btn-info">View</a>
                                     </td>
                                 </tr>

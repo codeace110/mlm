@@ -4,42 +4,57 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReferralCode;
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Services\ReferralCodeService;
+use Illuminate\Http\Request;
 
 class ReferralCodeController extends Controller
 {
+    protected ReferralCodeService $referralCodeService;
+
+    public function __construct(ReferralCodeService $referralCodeService)
+    {
+        $this->referralCodeService = $referralCodeService;
+    }
+
     public function index()
     {
-        $codes = ReferralCode::with(['assignedTo', 'usedBy', 'generatedBy'])->paginate(20);
-        return view('admin.referral_codes.index', compact('codes'));
+        $codes = ReferralCode::with(['assignedTo', 'usedBy', 'generatedBy'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        $stats = $this->referralCodeService->getCodeStatistics();
+
+        return view('admin.referral_codes.index', compact('codes', 'stats'));
     }
 
     public function generate(Request $request)
     {
-        $request->validate(['count' => 'required|integer|min:1|max:1000']);
+        try {
+            $codes = $this->referralCodeService->generateCodes(auth()->user(), 50);
 
-        $service = new ReferralCodeService();
-        $codes = $service->generateCodes(auth()->user(), $request->count);
-
-        return back()->with('success', "{$request->count} referral codes generated successfully.");
+            return back()->with('success', '50 referral codes generated successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    public function assign(Request $request, ReferralCode $code)
+    public function show(ReferralCode $referralCode)
     {
-        $request->validate(['distributor_id' => 'required|exists:users,id']);
+        $referralCode->load(['assignedTo', 'usedBy', 'generatedBy']);
 
-        $distributor = User::find($request->distributor_id);
-        $service = new ReferralCodeService();
-        $service->assignCodeToDistributor($code, $distributor);
+        return view('admin.referral_codes.show', compact('referralCode'));
+    }
+
+    public function assign(Request $request, ReferralCode $referralCode)
+    {
+        $request->validate([
+            'distributor_id' => 'required|exists:users,id',
+        ]);
+
+        $distributor = \App\Models\User::find($request->distributor_id);
+
+        $this->referralCodeService->assignCodeToDistributor($referralCode, $distributor);
 
         return back()->with('success', 'Referral code assigned successfully.');
-    }
-
-    public function show(ReferralCode $code)
-    {
-        $code->load(['assignedTo', 'usedBy', 'generatedBy']);
-        return view('admin.referral_codes.show', compact('code'));
     }
 }

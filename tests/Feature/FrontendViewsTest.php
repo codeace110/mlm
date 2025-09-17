@@ -21,7 +21,7 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function dashboard_loads_for_authenticated_user()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/dashboard');
@@ -33,7 +33,7 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function referrals_page_loads_for_authenticated_user()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/referrals');
@@ -44,7 +44,7 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function earnings_page_loads_for_authenticated_user()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/earnings');
@@ -55,7 +55,7 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function network_tree_page_loads_for_authenticated_user()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/network');
@@ -67,7 +67,7 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function profile_page_loads_for_authenticated_user()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/profile');
@@ -100,7 +100,7 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function logout_button_appears_on_dashboard()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/dashboard');
@@ -117,9 +117,9 @@ class FrontendViewsTest extends TestCase
     /** @test */
     public function network_tree_shows_nodes()
     {
-        $user = User::factory()->create();
-        $direct1 = User::factory()->create(['sponsor_id' => $user->id]);
-        $direct2 = User::factory()->create(['sponsor_id' => $user->id]);
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $direct1 = User::factory()->create(['sponsor_id' => $user->id, 'email_verified_at' => now()]);
+        $direct2 = User::factory()->create(['sponsor_id' => $user->id, 'email_verified_at' => now()]);
         $this->actingAs($user);
 
         $response = $this->get('/network');

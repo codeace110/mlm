@@ -10,10 +10,10 @@ test('registration screen can be rendered', function () {
 
 test('new users can register', function () {
     $distributor = \App\Models\User::factory()->create();
-    $adminCode = \App\Models\AdminCode::create([
-        'code' => 'TESTCODE123',
-        'distributor_id' => $distributor->id,
-        'status' => 'issued',
+    $referralCode = \App\Models\ReferralCode::create([
+        'code' => 'TESTREF123',
+        'generated_by' => $distributor->id,
+        'status' => 'available',
     ]);
 
     $response = $this->post('/register', [
@@ -21,7 +21,7 @@ test('new users can register', function () {
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-        'admin_code' => 'TESTCODE123',
+        'referral_code' => 'TESTREF123',
     ]);
 
     $this->assertAuthenticated();

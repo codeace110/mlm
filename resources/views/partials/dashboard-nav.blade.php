@@ -56,7 +56,7 @@
       </li>
       <!-- Network -->
       <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('network') ? 'active' : '' }}" href="{{ route('network') }}">
+        <a class="nav-link {{ request()->routeIs('dashboard.network') ? 'active' : '' }}" href="{{ route('dashboard.network') }}">
           <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
             <!-- 3D Box Icon -->
             <svg width="12px" height="12px" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
@@ -173,7 +173,7 @@
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Tables</li>
                 @elseif(request()->routeIs('dashboard.billing'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Bonus Details</li>
-                @elseif(request()->routeIs('network'))
+                @elseif(request()->routeIs('dashboard.network'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Network</li>
                 @elseif(request()->routeIs('notifications'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Notifications</li>
@@ -193,7 +193,7 @@
                     Tables
                 @elseif(request()->routeIs('dashboard.billing'))
                     Bonus Details
-                @elseif(request()->routeIs('network'))
+                @elseif(request()->routeIs('dashboard.network'))
                     Network
                 @elseif(request()->routeIs('notifications'))
                     Notifications
@@ -241,7 +241,7 @@
                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">
                   <i class="fa fa-user me-2"></i>Profile
                 </a></li>
-                <li><a class="dropdown-item" href="{{ route('network') }}">
+                <li><a class="dropdown-item" href="{{ route('dashboard.network') }}">
                   <i class="fa fa-sitemap me-2"></i>Network
                 </a></li>
                 <li><a class="dropdown-item" href="{{ route('earnings.index') }}">

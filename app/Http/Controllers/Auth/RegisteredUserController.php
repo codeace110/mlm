@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
-use App\Services\AdminCodeService;
+use App\Services\ReferralCodeService;
 use App\Services\NotificationService;
 use App\Services\BinaryBalancerService;
 
@@ -36,15 +36,15 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
-            'admin_code' => 'required|string',
+            'referral_code' => 'required|string',
             'preferred_side' => 'nullable|in:left,right',
         ]);
 
-        $adminCodeService = new AdminCodeService();
-        $sponsor = $adminCodeService->validateAndUseCode($request->admin_code); // Validate first
+        $referralCodeService = new ReferralCodeService();
+        $sponsor = $referralCodeService->validateAndUseCode($request->referral_code); // Validate first
 
         if (!$sponsor) {
-            return back()->withErrors(['admin_code' => 'Invalid or used admin code'])->withInput();
+            return back()->withErrors(['referral_code' => 'Invalid or used referral code'])->withInput();
         }
 
         $user = User::create([
@@ -55,7 +55,7 @@ class RegisteredUserController extends Controller
         ]);
 
         // Now mark as used
-        $adminCodeService->validateAndUseCode($request->admin_code, $user);
+        $referralCodeService->validateAndUseCode($request->referral_code, $user);
 
         // Place user in binary tree
         $binaryBalancerService = new BinaryBalancerService();

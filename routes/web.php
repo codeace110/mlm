@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\EarningController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\GenealogyController;
 use App\Http\Controllers\Admin\AdminCodeController;
+use App\Http\Controllers\Admin\ReferralCodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +36,9 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/network', [DashboardController::class, 'network'])->name('dashboard.network');
     Route::get('/network', [DashboardController::class, 'network'])->name('network');
+    Route::get('/dashboard/payout', [WithdrawalsController::class, 'dashboard'])->name('dashboard.payout');
     Route::get('/notifications', [DashboardController::class, 'notification'])->name('notifications');
     Route::get('/ajax/dashboard/charts', [DashboardController::class, 'ajaxChartData'])->name('ajax.dashboard.charts');
     Route::get('/ajax/dashboard/earnings-by-type', [DashboardController::class, 'ajaxEarningsByType'])->name('ajax.dashboard.earnings-by-type');
@@ -49,10 +52,9 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/ajax/earnings/recent', [EarningsController::class, 'ajaxRecent'])->name('ajax.earnings.recent');
 
     // Withdrawals (Payout functionality)
-    Route::get('/payout', [WithdrawalsController::class, 'dashboard'])->name('dashboard.payout');
     Route::post('/withdrawals', [WithdrawalsController::class, 'store'])->name('withdrawals.store');
-    Route::get('/ajax/withdrawals/stats', [WithdrawalsController::class, 'ajaxStats'])->name('ajax.withdrawals.stats');
-    Route::get('/ajax/withdrawals/recent', [WithdrawalsController::class, 'ajaxRecent'])->name('ajax.withdrawals.recent');
+    Route::get('/ajax/withdrawals/stats', [WithdrawalsController::class, 'ajaxStats'])->name('withdrawals.ajax.stats');
+    Route::get('/ajax/withdrawals/recent', [WithdrawalsController::class, 'ajaxRecent'])->name('withdrawals.ajax.recent');
 
 });
 
@@ -106,6 +108,8 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('admin_codes', AdminCodeController::class);
         Route::post('/admin_codes/generate', [AdminCodeController::class, 'generate'])->name('admin_codes.generate');
         Route::post('/admin_codes/{code}/assign', [AdminCodeController::class, 'assign'])->name('admin_codes.assign');
+        Route::resource('referral_codes', ReferralCodeController::class);
+        Route::post('/referral_codes/generate', [ReferralCodeController::class, 'generate'])->name('referral_codes.generate');
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
