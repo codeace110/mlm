@@ -24,8 +24,8 @@ class BinaryBalancerService
             $newUser->placement_side = $preferredSide ?? 'left';
             $newUser->save();
 
-            // TODO: Implement full placement logic (existing placement pipeline)
-            // This should place the user under the sponsor respecting preferredSide and spillover
+            // Implement placement logic with spillover
+            $this->placeInBinaryTree($newUser, $sponsor, $preferredSide);
 
             // After placement, propagate volume and calculate bonuses
             $volume = config('binary_balancer.volume_per_recruit', 1);
@@ -117,8 +117,8 @@ class BinaryBalancerService
             if (!$tree) return;
 
             while (true) {
-                $level = (int)$tree->level_index;
-                $quota = (int)pow(2, $level);
+                $level = (int)$tree->level_index + 1; // Start from level 1
+                $quota = (int)pow(2, $level); // Level 1 = 2^1 = 2, Level 2 = 2^2 = 4, etc.
 
                 $effectiveLeft = (int)$tree->total_left_volume - (int)$tree->left_consumed;
                 $effectiveRight = (int)$tree->total_right_volume - (int)$tree->right_consumed;
@@ -191,11 +191,139 @@ class BinaryBalancerService
     }
 
     /**
+     * Place user in binary tree with spillover logic
+     */
+    private function placeInBinaryTree(User $newUser, User $sponsor, ?string $preferredSide = null): void
+    {
+        $preferredSide = $preferredSide ?? 'left';
+
+        // Get sponsor's binary tree
+        $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->lockForUpdate()->first();
+
+        if (!$sponsorTree) {
+            // First placement for sponsor
+            $sponsorTree = BinaryTree::create(['user_id' => $sponsor->id]);
+        }
+
+        // Try to place in preferred position first
+        if ($preferredSide === 'left' && !$sponsorTree->left_child_id) {
+            $sponsorTree->left_child_id = $newUser->id;
+            $newUser->placement_side = 'left';
+        } elseif ($preferredSide === 'right' && !$sponsorTree->right_child_id) {
+            $sponsorTree->right_child_id = $newUser->id;
+            $newUser->placement_side = 'right';
+        } else {
+            // Spillover: place in the first available position
+            if (!$sponsorTree->left_child_id) {
+                $sponsorTree->left_child_id = $newUser->id;
+                $newUser->placement_side = 'left';
+            } elseif (!$sponsorTree->right_child_id) {
+                $sponsorTree->right_child_id = $newUser->id;
+                $newUser->placement_side = 'right';
+            } else {
+                // Both positions taken, spillover to the side with fewer children
+                $leftChild = User::find($sponsorTree->left_child_id);
+                $rightChild = User::find($sponsorTree->right_child_id);
+
+                $leftCount = $this->countDownline($leftChild);
+                $rightCount = $this->countDownline($rightChild);
+
+                if ($leftCount <= $rightCount) {
+                    // Spillover to left side
+                    $this->spilloverToChild($newUser, $leftChild, 'left');
+                } else {
+                    // Spillover to right side
+                    $this->spilloverToChild($newUser, $rightChild, 'right');
+                }
+            }
+        }
+
+        $sponsorTree->save();
+        $newUser->save();
+    }
+
+    /**
+     * Count total downline for a user
+     */
+    private function countDownline(?User $user): int
+    {
+        if (!$user) return 0;
+
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+        if (!$tree) return 0;
+
+        $count = 0;
+        if ($tree->left_child_id) $count++;
+        if ($tree->right_child_id) $count++;
+
+        // Recursively count deeper levels
+        if ($tree->left_child_id) {
+            $leftChild = User::find($tree->left_child_id);
+            $count += $this->countDownline($leftChild);
+        }
+        if ($tree->right_child_id) {
+            $rightChild = User::find($tree->right_child_id);
+            $count += $this->countDownline($rightChild);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Spillover placement to a child
+     */
+    private function spilloverToChild(User $newUser, User $child, string $side): void
+    {
+        $childTree = BinaryTree::where('user_id', $child->id)->first();
+
+        if (!$childTree) {
+            $childTree = BinaryTree::create(['user_id' => $child->id]);
+        }
+
+        // Try to place in child's preferred side first
+        if ($side === 'left' && !$childTree->left_child_id) {
+            $childTree->left_child_id = $newUser->id;
+            $newUser->placement_side = 'left';
+        } elseif ($side === 'right' && !$childTree->right_child_id) {
+            $childTree->right_child_id = $newUser->id;
+            $newUser->placement_side = 'right';
+        } else {
+            // Continue spillover recursively
+            if (!$childTree->left_child_id) {
+                $childTree->left_child_id = $newUser->id;
+                $newUser->placement_side = 'left';
+            } elseif (!$childTree->right_child_id) {
+                $childTree->right_child_id = $newUser->id;
+                $newUser->placement_side = 'right';
+            } else {
+                // Both taken, go deeper
+                $nextChild = $side === 'left' ? User::find($childTree->left_child_id) : User::find($childTree->right_child_id);
+                if ($nextChild) {
+                    $this->spilloverToChild($newUser, $nextChild, $side);
+                }
+            }
+        }
+
+        $childTree->save();
+    }
+
+    /**
      * Get position of a user relative to their sponsor
      */
     private function getPositionRelativeToSponsor(User $user, User $sponsor): string
     {
-        // Use placement_side from User model
+        // Check if user is direct child
+        $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->first();
+        if ($sponsorTree) {
+            if ($sponsorTree->left_child_id == $user->id) {
+                return 'left';
+            }
+            if ($sponsorTree->right_child_id == $user->id) {
+                return 'right';
+            }
+        }
+
+        // If not direct, determine based on placement_side
         return $user->placement_side ?? 'left';
     }
 

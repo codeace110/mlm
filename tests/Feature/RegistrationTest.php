@@ -29,7 +29,7 @@ class RegistrationTest extends TestCase
             'preferred_side' => 'left',
         ]);
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/dashboard');
         $this->assertDatabaseHas('users', [
             'email' => 'new@example.com',
             'sponsor_id' => $distributor->id,

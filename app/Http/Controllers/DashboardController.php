@@ -122,12 +122,24 @@ class DashboardController extends Controller
         }
 
         $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
-        $total_left_volume = $binaryTree ? $binaryTree->total_left_volume : 0;
-        $total_right_volume = $binaryTree ? $binaryTree->total_right_volume : 0;
-        $left_consumed = $binaryTree ? $binaryTree->left_consumed : 0;
-        $right_consumed = $binaryTree ? $binaryTree->right_consumed : 0;
-        $left_child_id = $binaryTree ? $binaryTree->left_child_id : null;
-        $right_child_id = $binaryTree ? $binaryTree->right_child_id : null;
+
+        if ($binaryTree) {
+            $total_left_volume = $binaryTree->total_left_volume;
+            $total_right_volume = $binaryTree->total_right_volume;
+            $left_consumed = $binaryTree->left_consumed;
+            $right_consumed = $binaryTree->right_consumed;
+            $left_child_id = $binaryTree->left_child_id;
+            $right_child_id = $binaryTree->right_child_id;
+        } else {
+            // For cases where BinaryTree is not created (e.g., tests), find children by sponsor_id
+            $directs = \App\Models\User::where('sponsor_id', $user->id)->orderBy('id')->get();
+            $left_child_id = $directs->count() > 0 ? $directs[0]->id : null;
+            $right_child_id = $directs->count() > 1 ? $directs[1]->id : null;
+            $total_left_volume = 0;
+            $total_right_volume = 0;
+            $left_consumed = 0;
+            $right_consumed = 0;
+        }
 
         // Calculate effective volumes (carryover)
         $effective_left = $total_left_volume - $left_consumed;

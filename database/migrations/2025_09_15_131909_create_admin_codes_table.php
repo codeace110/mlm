@@ -16,13 +16,13 @@ return new class extends Migration
         Schema::create('admin_codes', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->string('distributor_id', 20); // The distributor who gets the code
+            $table->string('distributor_id', 20)->nullable(); // The distributor who gets the code
             $table->enum('status', ['issued', 'unused', 'used'])->default('issued');
             $table->string('used_by_user_id', 20)->nullable();
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('distributor_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('distributor_id')->references('id')->on('users')->nullOnDelete();
             $table->foreign('used_by_user_id')->references('id')->on('users')->nullOnDelete();
         });
     }

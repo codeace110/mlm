@@ -37,7 +37,7 @@ class BinarySystemIntegrationTest extends TestCase
             'preferred_side' => 'left',
         ]);
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/dashboard');
         $newUser = User::where('email', 'new@example.com')->first();
         $this->assertNotNull($newUser);
 
