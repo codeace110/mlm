@@ -42,6 +42,13 @@
                         <th>User</th>
                         <th>Sponsor</th>
                         <th>Level</th>
+                        <th>Total Left Volume</th>
+                        <th>Total Right Volume</th>
+                        <th>Left Consumed</th>
+                        <th>Right Consumed</th>
+                        <th>Effective Left</th>
+                        <th>Effective Right</th>
+                        <th>Level</th>
                         <th>Joined At</th>
                         <th>Actions</th>
                     </tr>
@@ -62,6 +69,13 @@
                             </td>
                             <td>{{ $member->sponsor->name ?? 'N/A' }}</td>
                             <td>{{ $member->level ?? 'N/A' }}</td>
+                            <td>{{ $member->total_left_volume ?? 0 }}</td>
+                            <td>{{ $member->total_right_volume ?? 0 }}</td>
+                            <td>{{ $member->left_consumed ?? 0 }}</td>
+                            <td>{{ $member->right_consumed ?? 0 }}</td>
+                            <td>{{ $member->effective_left ?? 0 }}</td>
+                            <td>{{ $member->effective_right ?? 0 }}</td>
+                            <td>{{ $member->level_index ?? 1 }}</td>
                             <td>{{ $member->created_at->format('Y-m-d H:i') }}</td>
                             <td>
                                 <a href="{{ route('admin.genealogy.network', $member->id) }}"
@@ -72,7 +86,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center">No genealogy data found.</td>
+                            <td colspan="13" class="text-center">No genealogy data found.</td>
                         </tr>
                     @endforelse
                 </tbody>

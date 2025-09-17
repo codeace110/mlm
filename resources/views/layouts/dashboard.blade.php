@@ -6,6 +6,23 @@
 <body class="g-sidenav-show  bg-gray-100">
     @include('partials.DashboardNav')
 
+    <!-- Flash Messages -->
+    @if(session('success'))
+    <div data-flash="success" style="display: none;">{{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+    <div data-flash="error" style="display: none;">{{ session('error') }}</div>
+    @endif
+
+    @if(session('warning'))
+    <div data-flash="warning" style="display: none;">{{ session('warning') }}</div>
+    @endif
+
+    @if(session('info'))
+    <div data-flash="info" style="display: none;">{{ session('info') }}</div>
+    @endif
+
     <main>
         @yield('content')
     </main>

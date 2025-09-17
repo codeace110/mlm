@@ -35,20 +35,6 @@
         </a>
       </li>
 
-          <!-- Product Packages -->
-      <li class="nav-item">
-      <a class="nav-link {{ request()->routeIs('packages.*') ? 'active' : '' }}" href="{{ route('packages.index') }}">
-        <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-          <!-- Shopping Bag Icon -->
-          <svg width="12px" height="12px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000ff">
-            <title>shopping-bag</title>
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6zm0 2h12l1.5 2H4.5L6 4zm0 4h12v12H6V8z"/>
-          </svg>
-        </div>
-        <span class="nav-link-text ms-1">Product Packages</span>
-      </a>
-      </li>
-
       <!-- Referrals -->
       <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('dashboard.referrals') ? 'active' : '' }}" href="{{ route('dashboard.referrals') }}">
@@ -193,12 +179,6 @@
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Notifications</li>
                 @elseif(request()->routeIs('dashboard.payout'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Payout</li>
-                @elseif(request()->routeIs('packages.index'))
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Packages</li>
-                @elseif(request()->routeIs('packages.show'))
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Package Details</li>
-                @elseif(request()->routeIs('packages.payment'))
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Payment Method</li>
                 @elseif(request()->routeIs('dashboard.profile'))
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Profile</li>
                 @else
@@ -219,12 +199,6 @@
                     Notifications
                 @elseif(request()->routeIs('dashboard.payout'))
                     Payout
-                @elseif(request()->routeIs('packages.index'))
-                    Packages
-                @elseif(request()->routeIs('packages.show'))
-                    Package Details
-                @elseif(request()->routeIs('packages.payment'))
-                    Payment Method
                 @elseif(request()->routeIs('dashboard.profile'))
                     Profile
                 @else
@@ -241,9 +215,6 @@
             </div>
           </div>
           <ul class="navbar-nav  justify-content-end">
-            <li class="nav-item d-flex align-items-center">
-              <a class="btn btn-outline-primary btn-sm mb-0 me-3 " href="{{ route('packages.index') }}" >Browse Package</a>
-            </li>
             <!-- User Info -->
             <li class="nav-item dropdown d-flex align-items-center">
               <a href="javascript:;" class="nav-link text-body p-0" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -302,8 +273,17 @@
               </a>
             </li>
             <li class="nav-item dropdown pe-2 d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body p-0" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fa fa-bell cursor-pointer"></i>
+              <a href="{{ route('dashboard.notification') }}" class="nav-link text-body p-0 position-relative" title="Notifications">
+                <i class="fa fa-bell cursor-pointer fa-lg"></i>
+                @php
+                  $notificationService = new \App\Services\NotificationService();
+                  $unreadCount = $notificationService->getUnreadCount(auth()->id());
+                @endphp
+                @if($unreadCount > 0)
+                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle badge-circle rounded-pill" style="font-size: 0.65rem; min-width: 20px; height: 20px; line-height: 1.2; font-weight: 600;">
+                  {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                </span>
+                @endif
               </a>
               <ul class="dropdown-menu  dropdown-menu-end  px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
                 <li class="mb-2">

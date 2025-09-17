@@ -23,6 +23,16 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
             'remember_token' => Str::random(10),
+            'phone' => fake()->phoneNumber(),
+            'address' => fake()->address(),
+            'city' => fake()->city(),
+            'province' => fake()->state(),
+            'shipping_name' => fake()->name(),
+            'is_admin' => false,
+            'status' => 'approved',
+            'account_balance' => 0.00,
+            'level' => 1,
+            'balancing_mode' => '1:1',
         ];
     }
 

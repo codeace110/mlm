@@ -6,8 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Earning;
 use App\Models\Withdrawal;
-use App\Models\Package;
+use App\Models\ReferralCode;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class DashboardController extends Controller
 {
@@ -55,11 +56,17 @@ class DashboardController extends Controller
             ->groupBy('type')
             ->get();
 
-        // Get available packages for purchase
-        $availablePackages = Package::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->take(6)
-            ->get();
+        // Get user's referral codes
+        $referralCodes = ReferralCode::where('assigned_to', $user->id)->get();
+
+        // Calculate growth percentages (simplified - in real app, compare with previous period)
+        $downlineGrowthPercent = '+0%'; // Placeholder
+        $balanceGrowthPercent = '+0%'; // Placeholder
+        $withdrawalGrowthPercent = '+0%'; // Placeholder
+        $pendingEarningsGrowthPercent = '+0%'; // Placeholder
+        $salesText = 'Sales data will be displayed here'; // Placeholder
+        $salesGrowthPercent = '0%'; // Placeholder
+        $salesGrowthPeriod = 'this period'; // Placeholder
 
         return view('dashboard', compact(
             'user',
@@ -73,16 +80,21 @@ class DashboardController extends Controller
             'recentEarnings',
             'networkStats',
             'earningsByType',
-            'availablePackages'
+            'referralCodes',
+            'downlineGrowthPercent',
+            'balanceGrowthPercent',
+            'withdrawalGrowthPercent',
+            'pendingEarningsGrowthPercent',
+            'salesText',
+            'salesGrowthPercent',
+            'salesGrowthPeriod'
         ));
     }
 
     public function network()
     {
         $user = Auth::user();
-
-        // Build network tree
-        $networkTree = $this->buildNetworkTree($user);
+        $networkTree = $this->buildBinaryTree($user, 0, 10);
 
         return view('DashboardNetwork', compact('networkTree'));
     }
@@ -103,32 +115,71 @@ class DashboardController extends Controller
         ];
     }
 
-    private function buildNetworkTree($user, $depth = 0, $maxDepth = 3)
+    private function buildBinaryTree($user, $depth = 0, $maxDepth = 3)
     {
         if ($depth >= $maxDepth) {
             return null;
         }
 
-        $children = User::where('sponsor_id', $user->id)
-            ->with('earnings')
-            ->get()
-            ->map(function($child) use ($depth, $maxDepth) {
-                return $this->buildNetworkTree($child, $depth + 1, $maxDepth);
-            })
-            ->filter()
-            ->values();
+        $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
 
-        $totalEarnings = $user->earnings->sum('amount');
+        if ($binaryTree) {
+            $total_left_volume = $binaryTree->total_left_volume;
+            $total_right_volume = $binaryTree->total_right_volume;
+            $left_consumed = $binaryTree->left_consumed;
+            $right_consumed = $binaryTree->right_consumed;
+            $left_child_id = $binaryTree->left_child_id;
+            $right_child_id = $binaryTree->right_child_id;
+        } else {
+            // For cases where BinaryTree is not created (e.g., tests), find children by sponsor_id
+            $directs = \App\Models\User::where('sponsor_id', $user->id)->orderBy('id')->get();
+            $left_child_id = $directs->count() > 0 ? $directs[0]->id : null;
+            $right_child_id = $directs->count() > 1 ? $directs[1]->id : null;
+            $total_left_volume = 0;
+            $total_right_volume = 0;
+            $left_consumed = 0;
+            $right_consumed = 0;
+        }
 
-        return [
-            'id' => $user->id,
+        // Calculate effective volumes (carryover)
+        $effective_left = $total_left_volume - $left_consumed;
+        $effective_right = $total_right_volume - $right_consumed;
+
+        $node = [
             'name' => $user->name,
-            'email' => $user->email,
+            'id' => $user->id,
             'level' => $depth + 1,
-            'earnings' => $totalEarnings,
-            'children' => $children,
-            'created_at' => $user->created_at->format('M d, Y')
+            'left_volume' => $total_left_volume, // Keep for backward compatibility in view
+            'right_volume' => $total_right_volume,
+            'carryover_left' => $effective_left, // Effective = carryover
+            'carryover_right' => $effective_right,
+            'profile_image' => $user->profile_image,
+            'children' => [null, null] // Initialize with null placeholders for left and right
         ];
+
+        // Left child
+        if ($left_child_id) {
+            $leftUser = \App\Models\User::find($left_child_id);
+            if ($leftUser) {
+                $leftChild = $this->buildBinaryTree($leftUser, $depth + 1, $maxDepth);
+                if ($leftChild) {
+                    $node['children'][0] = $leftChild; // Left child at index 0
+                }
+            }
+        }
+
+        // Right child
+        if ($right_child_id) {
+            $rightUser = \App\Models\User::find($right_child_id);
+            if ($rightUser) {
+                $rightChild = $this->buildBinaryTree($rightUser, $depth + 1, $maxDepth);
+                if ($rightChild) {
+                    $node['children'][1] = $rightChild; // Right child at index 1
+                }
+            }
+        }
+
+        return $node;
     }
 
     public function ajaxChartData()
@@ -194,5 +245,89 @@ class DashboardController extends Controller
             'labels' => $labels,
             'data' => $data
         ]);
+    }
+
+    public function notification()
+    {
+        $user = Auth::user();
+        $notificationService = new NotificationService();
+
+        // Get paginated notifications for the user
+        $notifications = $notificationService->getUserNotifications($user->id, 15);
+
+        // If no notifications exist, create some sample ones for demonstration
+        if ($notifications->isEmpty()) {
+            $this->createSampleNotifications($user, $notificationService);
+            $notifications = $notificationService->getUserNotifications($user->id, 15);
+        }
+
+        return view('DashboardNotification', compact('notifications'));
+    }
+
+    private function createSampleNotifications(User $user, NotificationService $notificationService)
+    {
+        // Welcome notification
+        $notificationService->createNotification(
+            $user->id,
+            'success',
+            'Welcome to AKEN MLM!',
+            'Your account has been successfully created. Start building your network today!',
+            'rocket',
+            'success'
+        );
+
+        // Profile completion reminder
+        if (!$user->phone || !$user->address) {
+            $notificationService->createNotification(
+                $user->id,
+                'info',
+                'Complete Your Profile',
+                'Please complete your profile information to unlock all features.',
+                'user-edit',
+                'info'
+            );
+        }
+
+        // Referral code notification
+        $notificationService->createNotification(
+            $user->id,
+            'info',
+            'Your Referral Link is Ready',
+            'Share your referral link to start earning commissions: ' . url('/register?ref=' . $user->referral_code),
+            'link',
+            'primary'
+        );
+
+        // Network building tips
+        $downlinesCount = User::where('sponsor_id', $user->id)->count();
+        if ($downlinesCount == 0) {
+            $notificationService->createNotification(
+                $user->id,
+                'info',
+                'Start Building Your Network',
+                'Add your first referral to begin earning from the binary compensation plan.',
+                'users',
+                'primary'
+            );
+        }
+
+        // Recent earnings notification (if any)
+        $recentEarnings = Earning::where('user_id', $user->id)->latest()->first();
+        if ($recentEarnings) {
+            $notificationService->notifyEarnings($user, $recentEarnings);
+        }
+
+        // Pending withdrawals notification
+        $pendingWithdrawals = Withdrawal::where('user_id', $user->id)->where('status', 'pending')->count();
+        if ($pendingWithdrawals > 0) {
+            $notificationService->createNotification(
+                $user->id,
+                'info',
+                'Withdrawal Pending Review',
+                "You have {$pendingWithdrawals} withdrawal request(s) currently being reviewed.",
+                'clock',
+                'warning'
+            );
+        }
     }
 }

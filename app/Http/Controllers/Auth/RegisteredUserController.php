@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Services\AdminCodeService;
+use App\Services\NotificationService;
+use App\Services\BinaryBalancerService;
 
 class RegisteredUserController extends Controller
 {
@@ -33,29 +36,34 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
-            'referral_code' => 'nullable|string|exists:users,referral_code',
+            'admin_code' => 'required|string',
+            'preferred_side' => 'nullable|in:left,right',
         ]);
 
+        $adminCodeService = new AdminCodeService();
+        $sponsor = $adminCodeService->validateAndUseCode($request->admin_code); // Validate first
 
-        $sponsorId = null;
-
-        if ($request->filled('referral_code')) {
-            $sponsor = User::where('referral_code', $request->referral_code)->first();
-
-            if (!$sponsor) {
-                // If referral is required
-                return back()->withErrors(['referral_code' => 'Invalid referral code'])->withInput();
-            }
-
-            $sponsorId = $sponsor->id;
+        if (!$sponsor) {
+            return back()->withErrors(['admin_code' => 'Invalid or used admin code'])->withInput();
         }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'sponsor_id' => $sponsorId, // save referral
+            'sponsor_id' => $sponsor->id,
         ]);
+
+        // Now mark as used
+        $adminCodeService->validateAndUseCode($request->admin_code, $user);
+
+        // Place user in binary tree
+        $binaryBalancerService = new BinaryBalancerService();
+        $binaryBalancerService->placeUser($user, $sponsor, $request->preferred_side);
+
+        // Create notification for sponsor
+        $notificationService = new NotificationService();
+        $notificationService->notifyNewReferral($sponsor, $user);
 
         event(new Registered($user));
         Auth::login($user);

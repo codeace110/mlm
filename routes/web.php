@@ -6,15 +6,15 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\EarningsController;
 use App\Http\Controllers\WithdrawalsController;
-use App\Http\Controllers\PackageController as UserPackageController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\BonusRuleController;
+use App\Http\Controllers\Admin\BonusSettingsController;
 use App\Http\Controllers\Admin\NetworkController;
 use App\Http\Controllers\Admin\EarningController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\GenealogyController;
+use App\Http\Controllers\Admin\AdminCodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,9 +27,7 @@ use App\Http\Controllers\Admin\GenealogyController;
 |
 */
 
-Route::get('/', function () {
-    return view('home');
-});
+Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 
 // for user dashboard Routes
@@ -42,8 +40,6 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 
     // Referrals and Network
     Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
-    Route::get('/network', [ReferralController::class, 'network'])->name('network.index');
-    Route::get('/ajax/network', [ReferralController::class, 'ajaxNetwork'])->name('ajax.network');
 
     // Earnings
     Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
@@ -54,12 +50,6 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::post('/withdrawals', [WithdrawalsController::class, 'store'])->name('withdrawals.store');
     Route::get('/ajax/withdrawals/stats', [WithdrawalsController::class, 'ajaxStats'])->name('ajax.withdrawals.stats');
     Route::get('/ajax/withdrawals/recent', [WithdrawalsController::class, 'ajaxRecent'])->name('ajax.withdrawals.recent');
-
-    // Packages
-    Route::get('/packages', [UserPackageController::class, 'index'])->name('packages.index');
-    Route::get('/packages/{package}', [UserPackageController::class, 'show'])->name('packages.show');
-    Route::get('/packages/{package}/payment', [UserPackageController::class, 'payment'])->name('packages.payment');
-    Route::post('/packages/{package}/purchase', [UserPackageController::class, 'purchase'])->name('packages.purchase');
 
     // Legacy routes (keeping for compatibility)
     Route::get('/dashboard/referrals', [ReferralController::class, 'index'])->name('dashboard.referrals');
@@ -72,13 +62,39 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 
     Route::get('/dashboard/network', [DashboardController::class, 'network'])->name('dashboard.network');
 
-    Route::get('/dashboard/notification', function () {
-        return view('DashboardNotification');
-    })->name('dashboard.notification');
+    Route::get('/dashboard/notification', [DashboardController::class, 'notification'])->name('dashboard.notification');
+});
 
-    Route::get('/dashboard/package', function () {
-        return view('Dashboardpackage');
-    })->name('dashboard.package');
+// Notification Routes
+Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
+    Route::post('/notifications/{notification}/read', function (\App\Models\Notification $notification) {
+        if ($notification->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $notification->markAsRead();
+        return response()->json(['success' => true]);
+    })->name('notifications.read');
+
+    Route::delete('/notifications/{notification}', function (\App\Models\Notification $notification) {
+        if ($notification->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->deleteNotification($notification->id, auth()->id());
+        return response()->json(['success' => true]);
+    })->name('notifications.delete');
+
+    Route::post('/notifications/mark-all-read', function () {
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->markAllAsRead(auth()->id());
+        return response()->json(['success' => true]);
+    })->name('notifications.mark-all-read');
+
+    Route::post('/notifications/delete-all-read', function () {
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->deleteAllRead(auth()->id());
+        return response()->json(['success' => true]);
+    })->name('notifications.delete-all-read');
 });
 
 // Admin dashboard Routes
@@ -90,12 +106,15 @@ Route::middleware(['auth', 'is_admin'])
         Route::resource('users', UserController::class);
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/deny', [UserController::class, 'deny'])->name('users.deny');
-        Route::post('/package-purchases/{packagePurchase}/approve', [UserController::class, 'approvePackagePurchase'])->name('package-purchases.approve');
-        Route::post('/package-purchases/{packagePurchase}/deny', [UserController::class, 'denyPackagePurchase'])->name('package-purchases.deny');
-        Route::resource('packages', PackageController::class);
+        Route::post('/users/{user}/generate-referral-code', [UserController::class, 'generateReferralCode'])->name('users.generate-referral-code');
         Route::resource('bonus_rules', BonusRuleController::class);
         Route::post('/bonus_rules/{rule}/activate', [BonusRuleController::class, 'activate'])->name('bonus_rules.activate');
         Route::post('/bonus_rules/{rule}/deactivate', [BonusRuleController::class, 'deactivate'])->name('bonus_rules.deactivate');
+        Route::get('/bonus-settings', [BonusSettingsController::class, 'index'])->name('bonus_settings.index');
+        Route::put('/bonus-settings', [BonusSettingsController::class, 'update'])->name('bonus_settings.update');
+        Route::resource('admin_codes', AdminCodeController::class);
+        Route::post('/admin_codes/generate', [AdminCodeController::class, 'generate'])->name('admin_codes.generate');
+        Route::post('/admin_codes/{code}/assign', [AdminCodeController::class, 'assign'])->name('admin_codes.assign');
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');

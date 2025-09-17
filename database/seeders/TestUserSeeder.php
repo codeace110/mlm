@@ -6,6 +6,11 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Referral;
+use App\Models\BinaryTree;
+use App\Models\Earning;
+use App\Models\Withdrawal;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class TestUserSeeder extends Seeder
 {
@@ -40,6 +45,7 @@ class TestUserSeeder extends Seeder
     ];
 
     private $usedNames = [];
+    private $usedEmails = [];
 
     /**
      * Generate a unique realistic full name
@@ -57,112 +63,149 @@ class TestUserSeeder extends Seeder
     }
 
     /**
+     * Generate a unique email
+     */
+    private function generateUniqueEmail($base)
+    {
+        $email = $base . '@example.com';
+        if (in_array($email, $this->usedEmails)) {
+            $num = 1;
+            while (in_array($base . $num . '@example.com', $this->usedEmails)) {
+                $num++;
+            }
+            $email = $base . $num . '@example.com';
+        }
+        $this->usedEmails[] = $email;
+        return $email;
+    }
+
+    /**
+     * Create a user with referral record
+     */
+    private function createUser($sponsorId, $placementSide, $level, $namePrefix)
+    {
+        $user = User::create([
+            'id' => 'AKEN' . strtoupper(substr(bin2hex(random_bytes(6)), 0, 6)),
+            'name' => $this->generateUniqueName(),
+            'email' => $this->generateUniqueEmail($namePrefix . $level),
+            'password' => Hash::make('password'),
+            'referral_code' => strtoupper(substr($namePrefix, 0, 4)) . $level . rand(100, 999),
+            'sponsor_id' => $sponsorId,
+            'placement_side' => $placementSide,
+            'is_admin' => false,
+            'status' => 'approved',
+            'level' => $level,
+            'balancing_mode' => '1:1',
+            'account_balance' => rand(100, 1000) / 100,
+            'phone' => '+63 9' . rand(10, 99) . ' ' . rand(100, 999) . ' ' . rand(1000, 9999),
+            'address' => "Address " . rand(1, 100) . ", City, Philippines",
+        ]);
+
+        // Create referral record
+        Referral::create([
+            'user_id' => $user->id,
+            'sponsor_id' => $sponsorId,
+            'placement_side' => $placementSide,
+            'status' => 'approved',
+        ]);
+
+        return $user;
+    }
+
+    /**
+     * Recursively build binary tree
+     */
+    // Removed buildBinaryTree method as we're now using service for placement
+
+    /**
      * Run the database seeds.
      *
      * @return void
      */
     public function run()
     {
-        // Create a test user with account balance
-        $testUser = User::create([
-            'name' => $this->generateUniqueName(),
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-            'referral_code' => 'TEST001',
-            'sponsor_id' => null, // Root user
-            'placement_side' => null,
-            'is_admin' => false,
-            'status' => 'approved',
-            'level' => 0,
-            'account_balance' => 5000.00, // Add account balance
-            'phone' => '+63 912 345 6789',
-            'address' => '123 Test Street, Test City, Philippines',
-        ]);
+        // Truncate related tables first to avoid FK errors
+        Earning::truncate();
+        Withdrawal::truncate();
+        Referral::truncate();
+        BinaryTree::truncate();
+        User::whereNotIn('email', ['test@example.com', 'admin@example.com'])->delete();
 
-        // Create 8 direct referrals for the test user
-        $directReferrals = [];
-        for ($i = 1; $i <= 8; $i++) {
-            $user = User::create([
-                'name' => $this->generateUniqueName(),
-                'email' => "direct{$i}@example.com",
-                'password' => bcrypt('password'),
-                'referral_code' => "DIRECT{$i}00{$i}",
-                'sponsor_id' => $testUser->id,
-                'placement_side' => $i % 2 == 0 ? 'left' : 'right',
+        // Create root test user
+        $testUser = User::updateOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'id' => 'AKENROOT',
+                'name' => 'Test Root User',
+                'password' => Hash::make('password'),
+                'referral_code' => 'ROOT001',
+                'sponsor_id' => null,
+                'placement_side' => null,
                 'is_admin' => false,
                 'status' => 'approved',
-                'level' => 1,
-                'account_balance' => rand(500, 2000), // Random balance
-                'phone' => '+63 9' . rand(10, 99) . ' ' . rand(100, 999) . ' ' . rand(1000, 9999),
-                'address' => "Address {$i}, City {$i}, Philippines",
-            ]);
-            $directReferrals[] = $user;
+                'level' => 0,
+                'balancing_mode' => '1:1',
+                'account_balance' => 5000.00,
+                'phone' => '+63 912 345 6789',
+                'address' => '123 Test Street, Test City, Philippines',
+            ]
+        );
 
-            // Create referral record
-            Referral::create([
-                'user_id' => $user->id,
-                'sponsor_id' => $testUser->id,
-                'placement_side' => $user->placement_side,
+        // Create admin
+        $adminUser = User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'id' => 'AKENADMIN',
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'referral_code' => 'ADMIN001',
+                'sponsor_id' => null,
+                'placement_side' => null,
+                'is_admin' => true,
                 'status' => 'approved',
-            ]);
-        }
-
-        // Create level 2 referrals (referrals of direct referrals)
-        foreach ($directReferrals as $index => $sponsor) {
-            for ($i = 1; $i <= 4; $i++) {
-                $user = User::create([
-                    'name' => $this->generateUniqueName(),
-                    'email' => "level2_" . (($index * 4) + $i) . "@example.com",
-                    'password' => bcrypt('password'),
-                    'referral_code' => "LVL2" . (($index * 4) + $i) . "00{$i}",
-                    'sponsor_id' => $sponsor->id,
-                    'placement_side' => $i % 2 == 0 ? 'left' : 'right',
-                    'is_admin' => false,
-                    'status' => 'approved',
-                    'level' => 2,
-                    'account_balance' => rand(200, 1000), // Random balance
-                    'phone' => '+63 9' . rand(10, 99) . ' ' . rand(100, 999) . ' ' . rand(1000, 9999),
-                    'address' => "Level2 Address " . (($index * 4) + $i) . ", City, Philippines",
-                ]);
-
-                // Create referral record
-                Referral::create([
-                    'user_id' => $user->id,
-                    'sponsor_id' => $sponsor->id,
-                    'placement_side' => $user->placement_side,
-                    'status' => 'approved',
-                ]);
-            }
-        }
-
-        // Create some pending referrals
-        for ($i = 1; $i <= 3; $i++) {
-            $user = User::create([
-                'name' => $this->generateUniqueName(),
-                'email' => "pending{$i}@example.com",
-                'password' => bcrypt('password'),
-                'referral_code' => "PENDING{$i}00{$i}",
-                'sponsor_id' => $testUser->id,
-                'placement_side' => $i % 2 == 0 ? 'left' : 'right',
-                'is_admin' => false,
-                'status' => 'pending',
-                'level' => 1,
+                'level' => 0,
+                'balancing_mode' => '1:1',
                 'account_balance' => 0.00,
-                'phone' => '+63 9' . rand(10, 99) . ' ' . rand(100, 999) . ' ' . rand(1000, 9999),
-                'address' => "Pending Address {$i}, City, Philippines",
+                'phone' => '+63 912 345 6789',
+                'address' => 'Admin Address, Admin City, Philippines',
+            ]
+        );
+
+        // Create 5 direct referrals for the test user using the actual placement logic
+        $binaryTreeService = new \App\Services\BinaryTreeService();
+        $directUsers = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $directName = "Direct Referral " . $i;
+            $directEmail = "direct$i@example.com";
+            $directUser = User::create([
+                'id' => 'AKENDIR' . $i,
+                'name' => $directName,
+                'email' => $directEmail,
+                'password' => Hash::make('password'),
+                'referral_code' => 'DIR' . $i . rand(100, 999),
+                'sponsor_id' => $testUser->id,
+                'is_admin' => false,
+                'status' => 'approved',
+                'level' => 1,
+                'balancing_mode' => '1:1',
+                'account_balance' => rand(100, 500) / 100,
+                'phone' => '+63 9' . rand(10, 99) . rand(1000000, 9999999),
+                'address' => "Direct Address $i, City, Philippines",
             ]);
 
-            // Create referral record
-            Referral::create([
-                'user_id' => $user->id,
-                'sponsor_id' => $testUser->id,
-                'placement_side' => $user->placement_side,
-                'status' => 'pending',
-            ]);
+            // Place in binary tree using service (this will handle spillover)
+            $binaryTreeService->placeUserInTree($directUser, $testUser);
+
+            $directUsers[] = $directUser;
         }
 
-        $this->command->info('Test user created with email: test@example.com and password: password');
-        $this->command->info('Test user has account balance: ₱5,000.00');
-        $this->command->info('Created 8 direct referrals, 32 level 2 referrals, and 3 pending referrals');
+        $this->command->info('Created 5 direct referrals for Test Root User');
+        $this->command->info('Direct users:');
+        foreach ($directUsers as $user) {
+            $this->command->info("  - {$user->name} ({$user->email}) / password");
+        }
+        $this->command->info('Test user: test@example.com / password');
+        $this->command->info('Admin user: admin@example.com / password');
+        $this->command->info('View network at /dashboard/network to see scaling with 5 direct referrals (use level selector)');
     }
 }

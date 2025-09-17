@@ -176,19 +176,17 @@
                   <div class="col-md-6">
                     <strong>Processing Time:</strong>
                     <ul class="list-unstyled small mb-0 mt-1">
-                      <li><i class="fas fa-clock text-primary me-1"></i>Cebuana Lhuillier: 1-2 business days</li>
-                      <li><i class="fas fa-clock text-success me-1"></i>M Lhuillier: 1-2 business days</li>
-                      <li><i class="fas fa-clock text-info me-1"></i>Palawan Pawnshop: 1-2 business days</li>
-                      <li><i class="fas fa-clock text-warning me-1"></i>GCash/PayMaya: Same day</li>
+                      @foreach($paymentMethods ?? [] as $method)
+                      <li><i class="fas fa-clock text-{{ $method['color'] }} me-1"></i>{{ $method['name'] }}: {{ $method['processing_time'] }}</li>
+                      @endforeach
                     </ul>
                   </div>
                   <div class="col-md-6">
                     <strong>Fees:</strong>
                     <ul class="list-unstyled small mb-0 mt-1">
-                      <li><i class="fas fa-dollar-sign text-primary me-1"></i>Cebuana Lhuillier: ₱30</li>
-                      <li><i class="fas fa-dollar-sign text-success me-1"></i>M Lhuillier: ₱30</li>
-                      <li><i class="fas fa-dollar-sign text-info me-1"></i>Palawan Pawnshop: ₱30</li>
-                      <li><i class="fas fa-dollar-sign text-warning me-1"></i>GCash/PayMaya: ₱15</li>
+                      @foreach($paymentMethods ?? [] as $method)
+                      <li><i class="fas fa-dollar-sign text-{{ $method['color'] }} me-1"></i>{{ $method['name'] }}: ₱{{ $method['fee'] }}</li>
+                      @endforeach
                     </ul>
                   </div>
                 </div>

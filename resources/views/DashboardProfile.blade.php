@@ -43,9 +43,7 @@
             <!-- If no referral code -->
             <div class="card bg-light border-0 shadow-sm p-3 rounded-3">
               <h6 class="text-muted">No Referral Code Yet</h6>
-              <a href="{{ route('dashboard.package') }}" class="btn btn-sm bg-gradient-success mt-2">
-                Get a Product Package
-              </a>
+              <p class="text-sm text-muted mb-0">Complete your profile to get started</p>
             </div>
           @endif
 
