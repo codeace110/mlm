@@ -160,7 +160,7 @@ class WithdrawalsController extends Controller
             ]
         ];
 
-        return view('DashboardPayout', compact('withdrawals', 'stats', 'user', 'paymentMethods'));
+        return view('dashboard-payout', compact('withdrawals', 'stats', 'user', 'paymentMethods'));
     }
 
     private function getWithdrawalStats($user)

@@ -58,9 +58,9 @@ class FrontendViewsTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->get('/dashboard/network');
+        $response = $this->get('/network');
         $response->assertStatus(200);
-        $response->assertViewIs('DashboardNetwork');
+        $response->assertViewIs('dashboard-network');
         $response->assertSee('Network'); // Assuming view has network elements
     }
 
@@ -70,9 +70,9 @@ class FrontendViewsTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->get('/dashboard/profile');
+        $response = $this->get('/profile');
         $response->assertStatus(200);
-        $response->assertViewIs('DashboardProfile');
+        $response->assertViewIs('profile.edit');
     }
 
     /** @test */
@@ -122,7 +122,7 @@ class FrontendViewsTest extends TestCase
         $direct2 = User::factory()->create(['sponsor_id' => $user->id]);
         $this->actingAs($user);
 
-        $response = $this->get('/dashboard/network');
+        $response = $this->get('/network');
         $response->assertSee($direct1->name);
         $response->assertSee($direct2->name);
     }

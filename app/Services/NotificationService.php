@@ -93,7 +93,7 @@ class NotificationService
     /**
      * Create a notification.
      */
-    public static function createNotification(int $userId, string $type, string $title, string $message, string $icon = 'info', string $color = 'info', array $data = []): void
+    public static function createNotification(string $userId, string $type, string $title, string $message, string $icon = 'info', string $color = 'info', array $data = []): void
     {
         Log::info("Notification for user {$userId}: {$title} - {$message}");
 
@@ -105,7 +105,7 @@ class NotificationService
             'message' => $message,
             'icon' => $icon,
             'color' => $color,
-            'data' => json_encode($data),
+            'data' => $data,
             'is_read' => false,
         ]);
     }
@@ -125,7 +125,7 @@ class NotificationService
     /**
      * Mark all notifications as read for a user.
      */
-    public static function markAllAsRead(int $userId): void
+    public static function markAllAsRead(string $userId): void
     {
         \App\Models\Notification::where('user_id', $userId)
             ->where('is_read', false)
@@ -138,10 +138,90 @@ class NotificationService
     /**
      * Delete all read notifications for a user.
      */
-    public static function deleteAllRead(int $userId): void
+    public static function deleteAllRead(string $userId): void
     {
         \App\Models\Notification::where('user_id', $userId)
             ->where('is_read', true)
             ->delete();
+    }
+
+    /**
+     * Get paginated notifications for a user.
+     */
+    public function getUserNotifications(string $userId, int $perPage = 15)
+    {
+        return \App\Models\Notification::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Create sample notifications for a new user.
+     */
+    public static function createSampleNotifications(User $user): void
+    {
+        // Welcome notification
+        self::createNotification(
+            $user->id,
+            'success',
+            'Welcome to AKEN MLM!',
+            'Your account has been successfully created. Start building your network today!',
+            'rocket',
+            'success'
+        );
+
+        // Profile completion reminder
+        if (!$user->phone || !$user->address) {
+            self::createNotification(
+                $user->id,
+                'info',
+                'Complete Your Profile',
+                'Please complete your profile information to unlock all features.',
+                'user-edit',
+                'info'
+            );
+        }
+
+        // Referral code notification
+        self::createNotification(
+            $user->id,
+            'info',
+            'Your Referral Link is Ready',
+            'Share your referral link to start earning commissions: ' . url('/register?ref=' . $user->referral_code),
+            'link',
+            'primary'
+        );
+
+        // Network building tips
+        $downlinesCount = User::where('sponsor_id', $user->id)->count();
+        if ($downlinesCount == 0) {
+            self::createNotification(
+                $user->id,
+                'info',
+                'Start Building Your Network',
+                'Add your first referral to begin earning from the binary compensation plan.',
+                'users',
+                'primary'
+            );
+        }
+
+        // Recent earnings notification (if any)
+        $recentEarnings = \App\Models\Earning::where('user_id', $user->id)->latest()->first();
+        if ($recentEarnings) {
+            self::notifyEarnings($user, $recentEarnings);
+        }
+
+        // Pending withdrawals notification
+        $pendingWithdrawals = \App\Models\Withdrawal::where('user_id', $user->id)->where('status', 'pending')->count();
+        if ($pendingWithdrawals > 0) {
+            self::createNotification(
+                $user->id,
+                'info',
+                'Withdrawal Pending Review',
+                "You have {$pendingWithdrawals} withdrawal request(s) currently being reviewed.",
+                'clock',
+                'warning'
+            );
+        }
     }
 }

@@ -8,19 +8,19 @@ use App\Models\User;
 use App\Models\AdminCode;
 use App\Models\BinaryTree;
 use App\Models\Bonus;
-use App\Services\BinaryBalancerService;
+use App\Services\BinaryTreeService;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardNetworkTest extends TestCase
 {
     use RefreshDatabase;
 
-    private BinaryBalancerService $service;
+    private BinaryTreeService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new BinaryBalancerService();
+        $this->service = new BinaryTreeService();
     }
 
     public function test_dashboard_network_displays_correct_tree_with_spillover_and_bonuses()
@@ -62,23 +62,23 @@ class DashboardNetworkTest extends TestCase
         $direct2 = User::factory()->create(['sponsor_id' => $user->id]);
 
         // Place them as direct left and right
-        $this->service->placeUser($direct1, $user, 'left');
-        $this->service->placeUser($direct2, $user, 'right');
+        $this->service->placeUserInTree($direct1, $user, 'left');
+        $this->service->placeUserInTree($direct2, $user, 'right');
 
         // Now register spillover users under the direct referrals
         // Left side spillover
         $spillover1 = User::factory()->create(['sponsor_id' => $user->id]); // Will spillover to direct1
         $spillover2 = User::factory()->create(['sponsor_id' => $user->id]); // Will spillover to direct1
 
-        $this->service->placeUser($spillover1, $user, 'left'); // Should place under direct1
-        $this->service->placeUser($spillover2, $user, 'left'); // Should place under spillover1
+        $this->service->placeUserInTree($spillover1, $user, 'left'); // Should place under direct1
+        $this->service->placeUserInTree($spillover2, $user, 'left'); // Should place under spillover1
 
         // Right side spillover
         $spillover3 = User::factory()->create(['sponsor_id' => $user->id]); // Will spillover to direct2
-        $this->service->placeUser($spillover3, $user, 'right'); // Should place under direct2
+        $this->service->placeUserInTree($spillover3, $user, 'right'); // Should place under direct2
 
         // Test the dashboard network endpoint
-        $response = $this->get('/dashboard/network');
+        $response = $this->get('/network');
 
         $response->assertStatus(200);
         $response->assertViewHas('networkTree');
@@ -111,24 +111,23 @@ class DashboardNetworkTest extends TestCase
         $this->assertEquals(3, $userTree->total_left_volume); // direct1 + spillover1 + spillover2
         $this->assertEquals(2, $userTree->total_right_volume); // direct2 + spillover3 (but spillover3 might be placed differently)
 
-        // Verify bonuses were calculated (at least one direct bonus for the pair)
-        $directBonuses = Bonus::where('user_id', $user->id)->where('reward_type', 'direct')->get();
-        $this->assertGreaterThanOrEqual(1, $directBonuses->count());
-        $this->assertEquals(100, $directBonuses->first()->amount);
+        // Verify earnings were calculated (at least one direct bonus for the pair)
+        $directEarnings = \App\Models\Earning::where('user_id', $user->id)->where('type', 'direct')->get();
+        $this->assertGreaterThanOrEqual(1, $directEarnings->count());
+        $this->assertEquals(100, $directEarnings->first()->amount);
 
-        // Check level bonuses - should have at least level 1 completed
-        $levelBonuses = Bonus::where('user_id', $user->id)->where('reward_type', 'level')->get();
-        $this->assertGreaterThanOrEqual(1, $levelBonuses->count());
-        $this->assertEquals(1, $levelBonuses->first()->level_index);
-        $this->assertEquals(100, $levelBonuses->first()->amount);
+        // Check level earnings - should have at least level 1 completed
+        $levelEarnings = \App\Models\Earning::where('user_id', $user->id)->where('type', 'pair')->get();
+        $this->assertGreaterThanOrEqual(1, $levelEarnings->count());
+        $this->assertEquals(100, $levelEarnings->first()->amount);
 
         // Verify tree structure shows correct carryover (effective volumes)
         // Root should have effective_left = 3 - 2 = 1 (consumed 2 for level 1)
-        // effective_right = 1 - 0 = 1 (not consumed yet)
+        // effective_right = 2 - 2 = 0 (consumed 2 for level 1)
         $this->assertEquals(3, $networkTree['left_volume']); // total
         $this->assertEquals(2, $networkTree['right_volume']); // total (direct2 + spillover3)
         $this->assertEquals(1, $networkTree['carryover_left']); // effective = 3-2
-        $this->assertEquals(2, $networkTree['carryover_right']); // effective = 2-0 (no consumption yet)
+        $this->assertEquals(0, $networkTree['carryover_right']); // effective = 2-2
     }
 
     public function test_network_view_with_complex_spillover_and_multiple_levels()
@@ -158,12 +157,12 @@ class DashboardNetworkTest extends TestCase
         $users = [];
         for ($i = 0; $i < 20; $i++) {
             $newUser = User::factory()->create(['sponsor_id' => $user->id]);
-            $this->service->placeUser($newUser, $user, $i % 2 === 0 ? 'left' : 'right');
+            $this->service->placeUserInTree($newUser, $user, $i % 2 === 0 ? 'left' : 'right');
             $users[] = $newUser;
         }
 
         // Test network view
-        $response = $this->get('/dashboard/network');
+        $response = $this->get('/network');
 
         $response->assertStatus(200);
 
@@ -180,15 +179,15 @@ class DashboardNetworkTest extends TestCase
         $this->assertEquals(10, $userTree->total_left_volume); // 10 left placements
         $this->assertEquals(10, $userTree->total_right_volume); // 10 right placements
 
-        // Check that multiple level bonuses were awarded
-        $levelBonuses = Bonus::where('user_id', $user->id)->where('reward_type', 'level')->orderBy('level_index')->get();
+        // Check that multiple level earnings were awarded
+        $levelEarnings = \App\Models\Earning::where('user_id', $user->id)->where('type', 'pair')->orderBy('created_at')->get();
 
         // Should have consumed multiple levels
         // Level 1: 2 consumed from each side
         // Level 2: 4 consumed from each side
         // Level 3: 8 consumed from each side
         // Total consumed: 14 from each side, leaving 10-14 = -4 (but capped at 0)
-        $this->assertGreaterThanOrEqual(3, $levelBonuses->count()); // At least levels 1,2,3
+        $this->assertGreaterThanOrEqual(3, $levelEarnings->count()); // At least levels 1,2,3
 
         // Verify the tree shows correct effective volumes
         $expectedEffectiveLeft = max(0, 10 - $userTree->left_consumed);

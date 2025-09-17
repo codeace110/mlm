@@ -6,6 +6,8 @@ use App\Models\AdminCode;
 use App\Models\BinaryTree;
 use App\Models\Bonus;
 use App\Models\User;
+use App\Services\BinaryTreeService;
+use App\Services\BinaryBalancerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -74,7 +76,7 @@ class BinarySystemIntegrationTest extends TestCase
         }
 
         // Process levels
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryBalancerService();
         $service->processLevels($sponsor);
 
         // Should earn level 1 bonus (quota 2^1 = 2)
@@ -106,7 +108,7 @@ class BinarySystemIntegrationTest extends TestCase
         $sponsorTree->save();
 
         // Process levels
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryBalancerService();
         $service->processLevels($sponsor);
 
         // Should earn level 1 bonus
@@ -130,7 +132,7 @@ class BinarySystemIntegrationTest extends TestCase
 
         // First left direct
         $left = User::factory()->create(['sponsor_id' => $sponsor->id, 'placement_side' => 'left']);
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryBalancerService();
         $service->placeUser($left, $sponsor, 'left');
 
         // No bonus yet
@@ -155,19 +157,19 @@ class BinarySystemIntegrationTest extends TestCase
     public function product_reward_every_fifth_bonus()
     {
         $user = User::factory()->create();
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryTreeService();
 
         // Issue 4 regular bonuses
         for ($i = 0; $i < 4; $i++) {
-            $service->issueReward($user, 'direct');
+            $service->createEarning($user, 100, 'direct', 'Test bonus', 'pending');
         }
 
         // 5th should be product
-        $service->issueReward($user, 'direct');
+        $service->createEarning($user, 0, 'product', 'Product bonus', 'pending');
 
-        $bonuses = Bonus::where('user_id', $user->id)->get();
-        $productBonus = $bonuses->last();
-        $this->assertTrue($productBonus->is_product);
-        $this->assertEquals(0.00, $productBonus->amount);
+        $earnings = \App\Models\Earning::where('user_id', $user->id)->get();
+        $productEarning = $earnings->last();
+        $this->assertEquals('product', $productEarning->type);
+        $this->assertEquals(0.00, $productEarning->amount);
     }
 }

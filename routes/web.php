@@ -35,6 +35,8 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/network', [DashboardController::class, 'network'])->name('network');
+    Route::get('/notifications', [DashboardController::class, 'notification'])->name('notifications');
     Route::get('/ajax/dashboard/charts', [DashboardController::class, 'ajaxChartData'])->name('ajax.dashboard.charts');
     Route::get('/ajax/dashboard/earnings-by-type', [DashboardController::class, 'ajaxEarningsByType'])->name('ajax.dashboard.earnings-by-type');
 
@@ -47,22 +49,11 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
     Route::get('/ajax/earnings/recent', [EarningsController::class, 'ajaxRecent'])->name('ajax.earnings.recent');
 
     // Withdrawals (Payout functionality)
+    Route::get('/payout', [WithdrawalsController::class, 'dashboard'])->name('dashboard.payout');
     Route::post('/withdrawals', [WithdrawalsController::class, 'store'])->name('withdrawals.store');
     Route::get('/ajax/withdrawals/stats', [WithdrawalsController::class, 'ajaxStats'])->name('ajax.withdrawals.stats');
     Route::get('/ajax/withdrawals/recent', [WithdrawalsController::class, 'ajaxRecent'])->name('ajax.withdrawals.recent');
 
-    // Legacy routes (keeping for compatibility)
-    Route::get('/dashboard/referrals', [ReferralController::class, 'index'])->name('dashboard.referrals');
-
-    Route::get('/dashboard/payout', [WithdrawalsController::class, 'dashboard'])->name('dashboard.payout');
-
-    Route::get('/dashboard/profile', function () {
-        return view('DashboardProfile');
-    })->name('dashboard.profile');
-
-    Route::get('/dashboard/network', [DashboardController::class, 'network'])->name('dashboard.network');
-
-    Route::get('/dashboard/notification', [DashboardController::class, 'notification'])->name('dashboard.notification');
 });
 
 // Notification Routes

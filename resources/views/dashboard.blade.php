@@ -23,8 +23,8 @@
                     </div>
                     <div class="col-4">
                       <div class="dropdown text-end mb-6">
-                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers1" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fa fa-ellipsis-h text-white"></i>
+                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers1" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Options for downlines">
+                          <i class="fa fa-ellipsis-h text-white" aria-hidden="true"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers1">
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Action</a></li>
@@ -54,8 +54,8 @@
                     </div>
                     <div class="col-4">
                       <div class="dropstart text-end mb-6">
-                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers2" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fa fa-ellipsis-h text-white"></i>
+                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers2" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Options for account balance">
+                          <i class="fa fa-ellipsis-h text-white" aria-hidden="true"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers2">
                           <li><a class="dropdown-item border-radius-md" href="{{ route('dashboard.payout') }}">Request Withdrawal</a></li>
@@ -89,8 +89,8 @@
                     </div>
                     <div class="col-4">
                       <div class="dropdown text-end mb-6">
-                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers3" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fa fa-ellipsis-h text-white"></i>
+                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers3" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Options for total withdrawals">
+                          <i class="fa fa-ellipsis-h text-white" aria-hidden="true"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers3">
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Action</a></li>
@@ -120,8 +120,8 @@
                     </div>
                     <div class="col-4">
                       <div class="dropstart text-end mb-6">
-                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers4" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fa fa-ellipsis-h text-white"></i>
+                        <a href="javascript:;" class="cursor-pointer" id="dropdownUsers4" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Options for pending earnings">
+                          <i class="fa fa-ellipsis-h text-white" aria-hidden="true"></i>
                         </a>
                         <ul class="dropdown-menu px-2 py-3" aria-labelledby="dropdownUsers4">
                           <li><a class="dropdown-item border-radius-md" href="javascript:;">Action</a></li>
@@ -197,7 +197,7 @@
                 </p>
               </div>
               <div class="w-40 text-end">
-                <a class="btn btn-dark mb-0 text-end" href="javascript:;">View all reviews</a>
+                <button class="btn btn-dark mb-0 text-end" disabled>View all reviews</button>
               </div>
             </div>
           </div>
@@ -816,7 +816,7 @@
 
       // Initialize new analytics charts
       renderNetworkPerformanceChart();
-      renderSalesAnalyticsChart();
+      renderSalesAnalyticsChart(data.earnings);
       renderEarningsBreakdownChart();
       renderAccountBalanceMiniChart();
   }
@@ -1001,42 +1001,21 @@
           window.networkPerformanceChart.destroy();
       }
 
-      // Sample data - in real app, this would come from AJAX
+      // Real data from PHP variables
       const networkData = {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          labels: ['Level 1', 'Level 2', 'Level 3'],
           datasets: [
               {
-                  label: 'Direct Level',
-                  data: [12, 19, 15, 25, 22, 30, 28],
-                  borderColor: '#5e72e4',
-                  backgroundColor: 'rgba(94, 114, 228, 0.1)',
-                  borderWidth: 2,
-                  fill: true,
-                  tension: 0.4
-              },
-              {
-                  label: 'Level 2',
-                  data: [8, 12, 18, 15, 20, 25, 22],
-                  borderColor: '#11cdef',
-                  backgroundColor: 'rgba(17, 205, 239, 0.1)',
-                  borderWidth: 2,
-                  fill: true,
-                  tension: 0.4
-              },
-              {
-                  label: 'Level 3',
-                  data: [5, 8, 12, 10, 15, 18, 20],
-                  borderColor: '#fb6340',
-                  backgroundColor: 'rgba(251, 99, 64, 0.1)',
-                  borderWidth: 2,
-                  fill: true,
-                  tension: 0.4
+                  label: 'Network Members',
+                  data: [{{ $networkStats['level1'] }}, {{ $networkStats['level2'] }}, {{ $networkStats['level3'] }}],
+                  backgroundColor: ['#5e72e4', '#11cdef', '#fb6340'],
+                  borderWidth: 1
               }
           ]
       };
 
       window.networkPerformanceChart = new Chart(ctx, {
-          type: 'line',
+          type: 'bar',
           data: networkData,
           options: {
               responsive: true,
@@ -1103,7 +1082,7 @@
   }
 
   // New Sales Analytics Chart
-  function renderSalesAnalyticsChart() {
+  function renderSalesAnalyticsChart(earningsData = null) {
       const ctx = document.getElementById("sales-analytics-chart");
       if (!ctx) return;
 
@@ -1112,13 +1091,30 @@
           window.salesAnalyticsChart.destroy();
       }
 
-      // Sample data - in real app, this would come from AJAX
+      // Use real data if available, otherwise sample data
+      let labels, revenueData, growthData;
+      if (earningsData && earningsData.labels && earningsData.data) {
+          labels = earningsData.labels;
+          revenueData = earningsData.data;
+          // Calculate growth percentage
+          growthData = revenueData.map((val, index) => {
+              if (index === 0) return 0;
+              const prev = revenueData[index - 1];
+              return prev > 0 ? ((val - prev) / prev * 100) : 0;
+          });
+      } else {
+          // Sample data fallback
+          labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+          revenueData = [12000, 19000, 15000, 25000, 22000, 30000, 28000];
+          growthData = [5, 12, 8, 15, 10, 18, 14];
+      }
+
       const salesData = {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          labels: labels,
           datasets: [
               {
                   label: 'Revenue',
-                  data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
+                  data: revenueData,
                   borderColor: '#2dce89',
                   backgroundColor: 'rgba(45, 206, 137, 0.1)',
                   borderWidth: 3,
@@ -1128,7 +1124,7 @@
               },
               {
                   label: 'Growth %',
-                  data: [5, 12, 8, 15, 10, 18, 14],
+                  data: growthData,
                   borderColor: '#f5365c',
                   backgroundColor: 'rgba(245, 54, 92, 0.1)',
                   borderWidth: 2,
@@ -1242,11 +1238,11 @@
           window.earningsBreakdownChart.destroy();
       }
 
-      // Sample data - in real app, this would come from PHP variables
+      // Real data from PHP variables
       const earningsData = {
-          labels: ['Direct', 'Pair', 'Matching', 'Spillover', 'Bonus'],
+          labels: @json($earningsByType->pluck('type')->toArray()),
           datasets: [{
-              data: [4500, 3200, 1800, 1200, 800],
+              data: @json($earningsByType->pluck('total')->toArray()),
               backgroundColor: [
                   '#5e72e4', // Primary blue
                   '#2dce89', // Success green

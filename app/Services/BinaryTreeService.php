@@ -30,29 +30,25 @@ class BinaryTreeService
         // Try to place directly under sponsor
         if ($preferredSide === 'left' && !$sponsorTree->left_child_id) {
             $sponsorTree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $sponsorTree->left_volume) + $this->volumePerRecruit
+                'left_child_id' => $newUser->id
             ]);
             $side = 'left';
             $placed = true;
         } elseif ($preferredSide === 'right' && !$sponsorTree->right_child_id) {
             $sponsorTree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $sponsorTree->right_volume) + $this->volumePerRecruit
+                'right_child_id' => $newUser->id
             ]);
             $side = 'right';
             $placed = true;
         } elseif (!$sponsorTree->left_child_id) {
             $sponsorTree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $sponsorTree->left_volume) + $this->volumePerRecruit
+                'left_child_id' => $newUser->id
             ]);
             $side = 'left';
             $placed = true;
         } elseif (!$sponsorTree->right_child_id) {
             $sponsorTree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $sponsorTree->right_volume) + $this->volumePerRecruit
+                'right_child_id' => $newUser->id
             ]);
             $side = 'right';
             $placed = true;
@@ -64,8 +60,6 @@ class BinaryTreeService
 
             if ($childUser) {
                 if ($this->placeRecursively($childUser, $newUser, $spilloverSide)) {
-                    $leg = $spilloverSide . '_volume';
-                    $sponsorTree->update([$leg => ((float) $sponsorTree->{$leg}) + $this->volumePerRecruit]);
                     $side = $spilloverSide;
                     $placed = true;
                 } else {
@@ -74,8 +68,6 @@ class BinaryTreeService
                     $otherChildId = $otherSide === 'left' ? $sponsorTree->left_child_id : $sponsorTree->right_child_id;
                     $otherChildUser = User::find($otherChildId);
                     if ($otherChildUser && $this->placeRecursively($otherChildUser, $newUser, $otherSide)) {
-                        $leg = $otherSide . '_volume';
-                        $sponsorTree->update([$leg => ((float) $sponsorTree->{$leg}) + $this->volumePerRecruit]);
                         $side = $otherSide;
                         $placed = true;
                     }
@@ -120,26 +112,22 @@ class BinaryTreeService
 
         if ($preferredSide === 'left' && !$tree->left_child_id) {
             $tree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $tree->left_volume) + $this->volumePerRecruit
+                'left_child_id' => $newUser->id
             ]);
             return true;
         } elseif ($preferredSide === 'right' && !$tree->right_child_id) {
             $tree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $tree->right_volume) + $this->volumePerRecruit
+                'right_child_id' => $newUser->id
             ]);
             return true;
         } elseif (!$tree->left_child_id) {
             $tree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $tree->left_volume) + $this->volumePerRecruit
+                'left_child_id' => $newUser->id
             ]);
             return true;
         } elseif (!$tree->right_child_id) {
             $tree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $tree->right_volume) + $this->volumePerRecruit
+                'right_child_id' => $newUser->id
             ]);
             return true;
         } else {
@@ -149,7 +137,11 @@ class BinaryTreeService
 
             if ($childUser && $this->placeRecursively($childUser, $newUser, $weakerSide)) {
                 $leg = $weakerSide . '_volume';
-                $tree->update([$leg => ((float) $tree->{$leg}) + $this->volumePerRecruit]);
+                $totalLeg = 'total_' . $weakerSide . '_volume';
+                $tree->update([
+                    $leg => ((float) $tree->{$leg}) + $this->volumePerRecruit,
+                    $totalLeg => ((float) $tree->{$totalLeg}) + $this->volumePerRecruit
+                ]);
                 return true;
             }
 
@@ -159,7 +151,11 @@ class BinaryTreeService
             $otherChildUser = User::find($otherChildId);
             if ($otherChildUser && $this->placeRecursively($otherChildUser, $newUser, $otherSide)) {
                 $leg = $otherSide . '_volume';
-                $tree->update([$leg => ((float) $tree->{$leg}) + $this->volumePerRecruit]);
+                $totalLeg = 'total_' . $otherSide . '_volume';
+                $tree->update([
+                    $leg => ((float) $tree->{$leg}) + $this->volumePerRecruit,
+                    $totalLeg => ((float) $tree->{$totalLeg}) + $this->volumePerRecruit
+                ]);
                 return true;
             }
 
@@ -192,10 +188,12 @@ class BinaryTreeService
             $side = $current->placement_side;
             if ($side) {
                 $leg = $side . '_volume';
+                $totalLeg = 'total_' . $side . '_volume';
                 $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->first();
                 if ($sponsorTree) {
                     $sponsorTree->update([
-                        $leg => ((float) $sponsorTree->getAttribute($leg)) + $volume
+                        $leg => ((float) $sponsorTree->getAttribute($leg)) + $volume,
+                        $totalLeg => ((float) $sponsorTree->getAttribute($totalLeg)) + $volume
                     ]);
                 }
             }
@@ -280,6 +278,8 @@ class BinaryTreeService
             'right_volume' => $newRightVol,
             'carryover_left' => $newCarryoverLeft,
             'carryover_right' => $newCarryoverRight,
+            'left_consumed' => ((float) $tree->left_consumed) + ($leftVol - $newLeftVol),
+            'right_consumed' => ((float) $tree->right_consumed) + ($rightVol - $newRightVol),
         ]);
 
         // Notify user
@@ -290,7 +290,7 @@ class BinaryTreeService
     /**
      * Create earning record.
      */
-    private function createEarning(User $user, float $amount, string $type, string $description, string $status)
+    public function createEarning(User $user, float $amount, string $type, string $description, string $status)
     {
         Earning::create([
             'user_id' => $user->id,
@@ -335,5 +335,75 @@ class BinaryTreeService
             'carryover_left' => $tree ? $tree->carryover_left : 0,
             'carryover_right' => $tree ? $tree->carryover_right : 0,
         ];
+    }
+
+    /**
+     * Build binary tree for dashboard view.
+     */
+    public function buildBinaryTreeForView(User $user, int $depth = 0, int $maxDepth = 3): ?array
+    {
+        if ($depth >= $maxDepth) {
+            return null;
+        }
+
+        $binaryTree = BinaryTree::where('user_id', $user->id)->first();
+
+        if ($binaryTree) {
+            $total_left_volume = $binaryTree->total_left_volume;
+            $total_right_volume = $binaryTree->total_right_volume;
+            $left_consumed = $binaryTree->left_consumed;
+            $right_consumed = $binaryTree->right_consumed;
+            $left_child_id = $binaryTree->left_child_id;
+            $right_child_id = $binaryTree->right_child_id;
+        } else {
+            // For cases where BinaryTree is not created (e.g., tests), find children by sponsor_id
+            $directs = User::where('sponsor_id', $user->id)->orderBy('id')->get();
+            $left_child_id = $directs->count() > 0 ? $directs[0]->id : null;
+            $right_child_id = $directs->count() > 1 ? $directs[1]->id : null;
+            $total_left_volume = 0;
+            $total_right_volume = 0;
+            $left_consumed = 0;
+            $right_consumed = 0;
+        }
+
+        // Calculate effective volumes (carryover)
+        $effective_left = $total_left_volume - $left_consumed;
+        $effective_right = $total_right_volume - $right_consumed;
+
+        $node = [
+            'name' => $user->name,
+            'id' => $user->id,
+            'level' => $depth + 1,
+            'left_volume' => $total_left_volume, // Keep for backward compatibility in view
+            'right_volume' => $total_right_volume,
+            'carryover_left' => $effective_left, // Effective = carryover
+            'carryover_right' => $effective_right,
+            'profile_image' => $user->profile_image,
+            'children' => [null, null] // Initialize with null placeholders for left and right
+        ];
+
+        // Left child
+        if ($left_child_id) {
+            $leftUser = User::find($left_child_id);
+            if ($leftUser) {
+                $leftChild = $this->buildBinaryTreeForView($leftUser, $depth + 1, $maxDepth);
+                if ($leftChild) {
+                    $node['children'][0] = $leftChild; // Left child at index 0
+                }
+            }
+        }
+
+        // Right child
+        if ($right_child_id) {
+            $rightUser = User::find($right_child_id);
+            if ($rightUser) {
+                $rightChild = $this->buildBinaryTreeForView($rightUser, $depth + 1, $maxDepth);
+                if ($rightChild) {
+                    $node['children'][1] = $rightChild; // Right child at index 1
+                }
+            }
+        }
+
+        return $node;
     }
 }
