@@ -27,7 +27,10 @@ class BinarySystemIntegrationTest extends TestCase
         $distributor = User::factory()->create();
 
         // Assign code to distributor
-        $this->post('/admin/referral_codes/' . $code->id . '/assign', ['distributor_id' => $distributor->id]);
+        $this->post(route('admin.referral_codes.assign', $code), ['distributor_id' => $distributor->id]);
+
+        // Logout admin before registering
+        $this->post('/logout');
 
         // User registers with code
         $response = $this->post('/register', [
@@ -47,12 +50,12 @@ class BinarySystemIntegrationTest extends TestCase
         $this->assertEquals($distributor->id, $newUser->sponsor_id); // Since code was assigned to distributor
 
         // Check volume propagation
-        $adminTree = BinaryTree::where('user_id', $admin->id)->first();
-        $this->assertEquals(1, $adminTree->total_left_volume);
+        $distributorTree = BinaryTree::where('user_id', $distributor->id)->first();
+        $this->assertEquals(1, $distributorTree->total_left_volume);
 
         // Since no pairs yet, no direct bonus
         $this->assertDatabaseMissing('bonuses', [
-            'user_id' => $admin->id,
+            'user_id' => $distributor->id,
             'reward_type' => 'direct',
         ]);
     }

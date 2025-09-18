@@ -110,6 +110,7 @@ Route::middleware(['auth', 'is_admin'])
         Route::post('/admin_codes/{code}/assign', [AdminCodeController::class, 'assign'])->name('admin_codes.assign');
         Route::resource('referral_codes', ReferralCodeController::class);
         Route::post('/referral_codes/generate', [ReferralCodeController::class, 'generate'])->name('referral_codes.generate');
+        Route::post('/referral_codes/{referral_code}/assign', [ReferralCodeController::class, 'assign'])->name('referral_codes.assign');
         Route::get('/network', [NetworkController::class, 'index'])->name('network.index');
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
