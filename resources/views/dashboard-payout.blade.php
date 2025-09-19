@@ -38,7 +38,7 @@
               <a href="{{ route('profile.edit') }}" class="alert-link">Update Profile</a>
             </div>
           @else
-            <form method="POST" action="{{ route('withdrawals.store') }}">
+            <form method="POST" action="{{ route('withdrawals.store') }}" id="withdrawalForm">
               @csrf
               <div class="row">
                 <div class="col-md-6 mb-3">
@@ -47,6 +47,10 @@
                          name="amount" id="amount" placeholder="Enter amount (min ₱500)"
                          required min="500" max="{{ $user->account_balance }}" step="0.01"
                          value="{{ old('amount') }}">
+                  <div class="form-text">
+                      Available: ₱<span id="availableBalance">{{ number_format($user->account_balance, 2) }}</span>
+                      <span id="feeDisplay" class="text-muted ms-2"></span>
+                  </div>
                   @error('amount')
                     <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
@@ -163,7 +167,8 @@
                   <a href="{{ route('admin.withdrawals.index') }}" class="btn btn-outline-secondary me-2">
                     <i class="fas fa-history me-1"></i>View All
                   </a>
-                  <button type="submit" class="btn bg-gradient-success px-4">
+                  <button type="submit" class="btn bg-gradient-success px-4" id="submitBtn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     <i class="fas fa-paper-plane me-2"></i> Submit Request
                   </button>
                 </div>
@@ -350,6 +355,9 @@
 </div>
 
 <script>
+let currentBalance = {{ $user->account_balance }};
+let withdrawalPollingInterval;
+
 function togglePaymentFields() {
     const method = document.getElementById('method').value;
     const allFields = document.querySelectorAll('.payment-fields');
@@ -360,21 +368,265 @@ function togglePaymentFields() {
     // Show selected payment fields
     if (method) {
         document.getElementById(method + 'Fields').style.display = 'block';
+        updateFeeDisplay(method);
+    } else {
+        document.getElementById('feeDisplay').textContent = '';
     }
 }
 
-// Validate amount on input
-document.getElementById('amount')?.addEventListener('input', function() {
-    const amount = parseFloat(this.value);
-    const maxAmount = {{ $user->account_balance }};
-    const minAmount = 500;
+function updateFeeDisplay(method) {
+    const fees = {
+        'cebuana_lhuillier': 30,
+        'mlhuillier': 30,
+        'palawan_pawnshop': 30,
+        'gcash': 15,
+        'paymaya': 15
+    };
 
-    if (amount < minAmount) {
-        this.setCustomValidity('Amount must be at least ₱500');
-    } else if (amount > maxAmount) {
-        this.setCustomValidity('Amount cannot exceed your available balance');
+    const fee = fees[method] || 0;
+    const feeDisplay = document.getElementById('feeDisplay');
+    if (fee > 0) {
+        feeDisplay.textContent = `(Fee: ₱${fee})`;
     } else {
-        this.setCustomValidity('');
+        feeDisplay.textContent = '';
+    }
+}
+
+// Enhanced amount validation with real-time feedback
+document.getElementById('amount')?.addEventListener('input', function() {
+    const amount = parseFloat(this.value) || 0;
+    const minAmount = 500;
+    const input = this;
+
+    // Clear previous validation
+    input.classList.remove('is-valid', 'is-invalid');
+
+    if (amount < minAmount && amount > 0) {
+        input.setCustomValidity('Amount must be at least ₱500');
+        input.classList.add('is-invalid');
+        showValidationMessage('Amount must be at least ₱500', 'danger');
+    } else if (amount > currentBalance) {
+        input.setCustomValidity('Amount cannot exceed your available balance');
+        input.classList.add('is-invalid');
+        showValidationMessage('Insufficient balance for this withdrawal amount', 'danger');
+    } else if (amount >= minAmount && amount <= currentBalance) {
+        input.setCustomValidity('');
+        input.classList.add('is-valid');
+        hideValidationMessage();
+    } else {
+        hideValidationMessage();
+    }
+});
+
+// Payment method validation
+function validatePaymentFields() {
+    const method = document.getElementById('method').value;
+    if (!method) return true; // Will be caught by required validation
+
+    const fields = getPaymentFields(method);
+    let isValid = true;
+
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && field.hasAttribute('required') && !field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else if (field) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        }
+    });
+
+    return isValid;
+}
+
+function getPaymentFields(method) {
+    const fieldMap = {
+        'cebuana_lhuillier': ['cl_branch', 'cl_account_number', 'cl_account_name'],
+        'mlhuillier': ['ml_branch', 'ml_account_number', 'ml_account_name'],
+        'palawan_pawnshop': ['pp_branch', 'pp_account_number', 'pp_account_name'],
+        'gcash': ['gcash_number', 'gcash_name'],
+        'paymaya': ['paymaya_number', 'paymaya_name']
+    };
+
+    return fieldMap[method] || [];
+}
+
+// Mobile number validation for GCash and PayMaya
+function validateMobileNumber(input) {
+    const value = input.value.replace(/\D/g, '');
+    const isValidFormat = /^09\d{9}$/.test(value);
+
+    input.classList.remove('is-valid', 'is-invalid');
+
+    if (value && !isValidFormat) {
+        input.classList.add('is-invalid');
+        showValidationMessage('Please enter a valid Philippine mobile number (09XXXXXXXXX)', 'warning');
+        return false;
+    } else if (value && isValidFormat) {
+        input.classList.add('is-valid');
+        hideValidationMessage();
+        return true;
+    }
+
+    return true;
+}
+
+// Add mobile number validation to GCash and PayMaya fields
+document.getElementById('gcash_number')?.addEventListener('input', function() {
+    validateMobileNumber(this);
+});
+
+document.getElementById('paymaya_number')?.addEventListener('input', function() {
+    validateMobileNumber(this);
+});
+
+// Form submission with enhanced validation and loading states
+document.getElementById('withdrawalForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = submitBtn.querySelector('.spinner-border');
+
+    // Validate payment fields
+    if (!validatePaymentFields()) {
+        showValidationMessage('Please fill in all required payment details', 'danger');
+        return;
+    }
+
+    // Show loading state
+    submitBtn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    // Submit form
+    const formData = new FormData(this);
+
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showValidationMessage('Withdrawal request submitted successfully!', 'success');
+
+            // Update balance display
+            updateBalanceDisplay();
+
+            // Reset form after delay
+            setTimeout(() => {
+                this.reset();
+                togglePaymentFields();
+                hideValidationMessage();
+            }, 2000);
+
+        } else {
+            showValidationMessage(data.message || 'An error occurred', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showValidationMessage('Network error. Please try again.', 'danger');
+    })
+    .finally(() => {
+        // Hide loading state
+        submitBtn.disabled = false;
+        spinner.classList.add('d-none');
+    });
+});
+
+// Real-time balance updates
+function updateBalanceDisplay() {
+    fetch('/ajax/dashboard/balance-stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('availableBalance').textContent = new Intl.NumberFormat().format(data.balance);
+                currentBalance = data.balance;
+
+                // Update amount input max value
+                const amountInput = document.getElementById('amount');
+                if (amountInput) {
+                    amountInput.max = currentBalance;
+                }
+            }
+        })
+        .catch(error => console.error('Error updating balance:', error));
+}
+
+// Status polling for pending withdrawals
+function startStatusPolling() {
+    withdrawalPollingInterval = setInterval(() => {
+        updateWithdrawalStatuses();
+    }, 30000); // Poll every 30 seconds
+}
+
+function updateWithdrawalStatuses() {
+    // Update withdrawal statistics
+    fetch('/ajax/withdrawals/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update stats cards if they exist
+                updateStatsDisplay(data.stats);
+            }
+        })
+        .catch(error => console.error('Error updating withdrawal stats:', error));
+}
+
+function updateStatsDisplay(stats) {
+    // Update statistics cards with new data
+    const totalElement = document.querySelector('.card:contains("Total Withdrawn") h5');
+    const pendingElement = document.querySelector('.card:contains("Pending") h5');
+    const approvedElement = document.querySelector('.card:contains("Approved") h5');
+    const deniedElement = document.querySelector('.card:contains("Denied Requests") h5');
+
+    if (totalElement) totalElement.textContent = '₱' + new Intl.NumberFormat().format(stats.total);
+    if (pendingElement) pendingElement.textContent = '₱' + new Intl.NumberFormat().format(stats.pending);
+    if (approvedElement) approvedElement.textContent = '₱' + new Intl.NumberFormat().format(stats.approved);
+    if (deniedElement) deniedElement.textContent = stats.denied_count;
+}
+
+// Validation message display
+function showValidationMessage(message, type) {
+    hideValidationMessage(); // Remove existing messages
+
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show mt-2`;
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check' : type === 'danger' ? 'exclamation' : 'info'}-circle me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    const form = document.getElementById('withdrawalForm');
+    form.insertBefore(alert, form.lastElementChild);
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function hideValidationMessage() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => alert.remove());
+}
+
+// Initialize polling when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startStatusPolling();
+});
+
+// Clean up polling when page unloads
+window.addEventListener('beforeunload', function() {
+    if (withdrawalPollingInterval) {
+        clearInterval(withdrawalPollingInterval);
     }
 });
 </script>

@@ -46,17 +46,22 @@
                         <i class="bi bi-arrow-left me-2"></i>Back to List
                     </a>
                     @if($code->status === 'available')
-                        <form action="{{ route('admin.referral_codes.assign', $code) }}" method="POST" class="mb-2">
+                        <form id="assign-form" class="mb-2">
                             @csrf
+                            <input type="hidden" name="distributor_id" id="distributor_id" required>
                             <div class="mb-2">
-                                <select name="distributor_id" class="form-select" required>
-                                    <option value="">Select Distributor</option>
-                                    @foreach(\App\Models\User::where('is_admin', false)->get() as $user)
-                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                    @endforeach
-                                </select>
+                                <label for="user-search" class="form-label">Search Distributor</label>
+                                <input type="text" id="user-search" class="form-control" placeholder="Type to search users..." autocomplete="off">
+                                <div id="user-suggestions" class="list-group mt-1" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                                <div id="selected-user" class="mt-2" style="display: none;">
+                                    <span class="badge bg-primary">Selected: <span id="selected-user-name"></span></span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="clear-selection">Clear</button>
+                                </div>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Assign Code</button>
+                            <button type="submit" class="btn btn-primary w-100" id="assign-btn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                Assign Code
+                            </button>
                         </form>
                     @endif
                 </div>
@@ -64,4 +69,144 @@
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    let searchTimeout;
+    let selectedUser = null;
+
+    // User search with autocomplete
+    $('#user-search').on('input', function() {
+        const query = $(this).val().trim();
+        const $suggestions = $('#user-suggestions');
+
+        if (query.length < 2) {
+            $suggestions.hide();
+            return;
+        }
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            $.ajax({
+                url: '{{ route("admin.referral_codes.search_users") }}',
+                method: 'GET',
+                data: { q: query },
+                success: function(users) {
+                    $suggestions.empty();
+
+                    if (users.length > 0) {
+                        users.forEach(function(user) {
+                            const suggestion = `
+                                <a href="#" class="list-group-item list-group-item-action user-suggestion"
+                                   data-id="${user.id}" data-name="${user.name}" data-email="${user.email}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">${user.name}</h6>
+                                    </div>
+                                    <small class="text-muted">${user.email}</small>
+                                </a>
+                            `;
+                            $suggestions.append(suggestion);
+                        });
+                        $suggestions.show();
+                    } else {
+                        $suggestions.append('<div class="list-group-item">No users found</div>');
+                        $suggestions.show();
+                    }
+                }
+            });
+        }, 300);
+    });
+
+    // Handle user selection
+    $(document).on('click', '.user-suggestion', function(e) {
+        e.preventDefault();
+        const userId = $(this).data('id');
+        const userName = $(this).data('name');
+        const userEmail = $(this).data('email');
+
+        selectedUser = { id: userId, name: userName, email: userEmail };
+        $('#distributor_id').val(userId);
+        $('#selected-user-name').text(userName + ' (' + userEmail + ')');
+        $('#selected-user').show();
+        $('#user-search').val('');
+        $('#user-suggestions').hide();
+    });
+
+    // Clear selection
+    $('#clear-selection').on('click', function() {
+        selectedUser = null;
+        $('#distributor_id').val('');
+        $('#selected-user').hide();
+        $('#user-search').val('');
+    });
+
+    // Handle form submission
+    $('#assign-form').on('submit', function(e) {
+        e.preventDefault();
+
+        if (!selectedUser) {
+            showNotification('Please select a distributor first.', 'warning');
+            return;
+        }
+
+        const $btn = $('#assign-btn');
+        const $spinner = $btn.find('.spinner-border');
+
+        $btn.prop('disabled', true);
+        $spinner.removeClass('d-none');
+
+        const formData = new FormData(this);
+        formData.append('_token', '{{ csrf_token() }}');
+
+        $.ajax({
+            url: '{{ route("admin.referral_codes.assign", $code) }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.message, 'success');
+
+                    // Update the page to reflect changes
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showNotification(response.message, 'danger');
+                }
+            },
+            error: function(xhr) {
+                let message = 'An error occurred while assigning the code.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                showNotification(message, 'danger');
+            },
+            complete: function() {
+                $btn.prop('disabled', false);
+                $spinner.addClass('d-none');
+            }
+        });
+    });
+
+    function showNotification(message, type) {
+        const notification = `
+            <div class="alert alert-${type} alert-dismissible fade show position-fixed"
+                 style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        $('body').append(notification);
+
+        setTimeout(function() {
+            $('.alert').fadeOut(function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+});
+</script>
 @endsection

@@ -8,7 +8,7 @@
                 <div class="card-header pb-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6>My Binary Network Tree</h6>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
                             <select id="levelSelect" class="form-select form-select-sm" style="width: auto;">
                                 <option value="1">Level 1</option>
                                 <option value="2">Level 2</option>
@@ -16,6 +16,20 @@
                                 <option value="5">Level 5</option>
                                 <option value="10" selected>Full Tree (Scalable)</option>
                             </select>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary btn-sm" id="zoomIn" title="Zoom In">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" id="zoomOut" title="Zoom Out">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" id="resetView" title="Reset View">
+                                    <i class="fas fa-home"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm" id="exportTree" title="Export as PNG">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
                             <button class="btn btn-outline-primary btn-sm" onclick="refreshNetwork()">
                                 <i class="fas fa-sync-alt me-1"></i>Refresh
                             </button>
@@ -105,6 +119,77 @@
             </div>
         </div>
     </div>
+
+    <!-- User Details Modal -->
+    <div class="modal fade" id="userDetailsModal" tabindex="-1" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userDetailsModalLabel">User Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div id="userAvatar" class="mb-3">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem;">
+                                    <span id="userInitial"></span>
+                                </div>
+                            </div>
+                            <h5 id="userName"></h5>
+                            <p class="text-muted mb-1" id="userEmail"></p>
+                            <span class="badge" id="userStatus">Active</span>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Left Volume</h6>
+                                            <h4 class="text-primary" id="leftVolume">0</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Right Volume</h6>
+                                            <h4 class="text-success" id="rightVolume">0</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-sm-6">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Carryover Left</h6>
+                                            <h4 class="text-warning" id="carryoverLeft">0</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Carryover Right</h6>
+                                            <h4 class="text-info" id="carryoverRight">0</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <p><strong>Joined:</strong> <span id="joinDate"></span></p>
+                                <p><strong>Last Active:</strong> <span id="lastActive"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @endsection
@@ -119,6 +204,8 @@ let lastX = 0;
 let lastY = 0;
 let translateX = 0;
 let translateY = 0;
+let isTransitioning = false;
+let clickedNode = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing network view');
@@ -156,18 +243,89 @@ document.addEventListener('DOMContentLoaded', function() {
         canvas.style.cursor = 'grab';
     });
 
-    // Level selector change event
-    document.getElementById('levelSelect').addEventListener('change', function() {
-        currentLevel = parseInt(this.value);
-        // Dynamically resize canvas for scalability
-        const canvas = document.getElementById('binary-tree-canvas');
-        const baseWidth = 1200;
-        const baseHeight = 800;
-        const extraWidth = (currentLevel - 3) * 300;
-        const extraHeight = (currentLevel - 3) * 150;
-        canvas.width = Math.min(baseWidth + extraWidth, 2000);
-        canvas.height = Math.min(baseHeight + extraHeight, 1200);
+    // Touch support for mobile
+    let touchStartX = 0;
+    let touchStartY = 0;
+    canvas.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX - translateX;
+            touchStartY = touch.clientY - translateY;
+            isDragging = true;
+            canvas.style.cursor = 'grabbing';
+        }
+    });
+
+    canvas.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 1 && isDragging) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            translateX = touch.clientX - touchStartX;
+            translateY = touch.clientY - touchStartY;
+            drawBinaryTree();
+        }
+    });
+
+    canvas.addEventListener('touchend', function() {
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+    });
+
+    // Zoom buttons
+    document.getElementById('zoomIn').addEventListener('click', function() {
+        scale = Math.min(scale * 1.2, 4);
         drawBinaryTree();
+    });
+
+    document.getElementById('zoomOut').addEventListener('click', function() {
+        scale = Math.max(scale * 0.8, 0.3);
+        drawBinaryTree();
+    });
+
+    document.getElementById('resetView').addEventListener('click', function() {
+        scale = 1.0;
+        translateX = 0;
+        translateY = 0;
+        drawBinaryTree();
+    });
+
+    // Export functionality
+    document.getElementById('exportTree').addEventListener('click', function() {
+        const canvas = document.getElementById('binary-tree-canvas');
+        const link = document.createElement('a');
+        link.download = 'network-tree-' + new Date().toISOString().split('T')[0] + '.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+
+    // Level selector change event with smooth transition
+    document.getElementById('levelSelect').addEventListener('change', function() {
+        if (isTransitioning) return;
+
+        isTransitioning = true;
+        const newLevel = parseInt(this.value);
+
+        // Smooth transition effect
+        canvas.style.opacity = '0.7';
+        setTimeout(() => {
+            currentLevel = newLevel;
+            // Dynamically resize canvas for scalability
+            const baseWidth = 1200;
+            const baseHeight = 800;
+            const extraWidth = (currentLevel - 3) * 300;
+            const extraHeight = (currentLevel - 3) * 150;
+            canvas.width = Math.min(baseWidth + extraWidth, 2000);
+            canvas.height = Math.min(baseHeight + extraHeight, 1200);
+
+            // Reset view for new level
+            scale = 1.0;
+            translateX = 0;
+            translateY = 0;
+
+            drawBinaryTree();
+            canvas.style.opacity = '1';
+            isTransitioning = false;
+        }, 300);
     });
 });
 
@@ -210,6 +368,9 @@ function drawBinaryTree() {
     console.log('Canvas dimensions:', width, height);
     ctx.clearRect(0, 0, width, height);
 
+    // Reset clickable nodes
+    window.clickableNodes = [];
+
     ctx.save();
     ctx.translate(translateX, translateY);
     ctx.scale(scale, scale);
@@ -234,11 +395,45 @@ function drawBinaryTree() {
     drawNode(networkData, centerX, 80, 0, maxDepth, ctx, nodeRadius, verticalSpacing, width, sideMargin, centerX);
 
     ctx.restore();
+
+    // Add click event listener to canvas
+    canvas.onclick = function(e) {
+        if (isDragging) return; // Don't handle clicks during drag
+
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left - translateX) / scale;
+        const clickY = (e.clientY - rect.top - translateY) / scale;
+
+        // Check if click is on a node
+        for (const nodeData of window.clickableNodes) {
+            const distance = Math.sqrt(
+                Math.pow(clickX - nodeData.x, 2) + Math.pow(clickY - nodeData.y, 2)
+            );
+
+            if (distance <= nodeData.radius && nodeData.node) {
+                showUserDetails(nodeData.node);
+                break;
+            }
+        }
+    };
 }
 function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvasWidth, margin, centerX) {
     if (depth > maxDepth) return;
 
     const hOffset = Math.max(80, canvasWidth / Math.pow(2, depth + 2));
+
+    // Store node data for click detection
+    const nodeData = {
+        node: node,
+        x: x,
+        y: y,
+        radius: nodeRadius,
+        depth: depth
+    };
+
+    // Add to clickable nodes array
+    if (!window.clickableNodes) window.clickableNodes = [];
+    window.clickableNodes.push(nodeData);
 
     // --- Draw node ---
     if (node) {
@@ -353,7 +548,115 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
 }
 
 
+function showUserDetails(node) {
+    // Populate modal with user data
+    document.getElementById('userInitial').textContent = node.name.charAt(0).toUpperCase();
+    document.getElementById('userName').textContent = node.name;
+    document.getElementById('userEmail').textContent = node.email || 'N/A';
+    document.getElementById('leftVolume').textContent = node.left_volume || 0;
+    document.getElementById('rightVolume').textContent = node.right_volume || 0;
+    document.getElementById('carryoverLeft').textContent = node.carryover_left || 0;
+    document.getElementById('carryoverRight').textContent = node.carryover_right || 0;
+    document.getElementById('joinDate').textContent = node.created_at ? new Date(node.created_at).toLocaleDateString() : 'N/A';
+    document.getElementById('lastActive').textContent = node.updated_at ? new Date(node.updated_at).toLocaleDateString() : 'N/A';
+
+    // Set status badge
+    const statusBadge = document.getElementById('userStatus');
+    statusBadge.textContent = 'Active';
+    statusBadge.className = 'badge bg-success';
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+    modal.show();
+}
+
 function refreshNetwork() {
     window.location.reload();
 }
+
+// Live data updates
+function startLiveUpdates() {
+    // Update network stats every 30 seconds
+    setInterval(function() {
+        updateNetworkStatsFromServer();
+    }, 30000);
+
+    // Update balance stats every 60 seconds (if balance elements exist)
+    setInterval(function() {
+        updateBalanceStatsFromServer();
+    }, 60000);
+}
+
+function updateNetworkStatsFromServer() {
+    $.ajax({
+        url: '{{ route("ajax.dashboard.network_stats") }}',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                // Update the displayed statistics
+                document.getElementById('level1Count').textContent = response.stats.level1;
+                document.getElementById('level2Count').textContent = response.stats.level2;
+                document.getElementById('level3Count').textContent = response.stats.level3;
+                document.getElementById('totalCount').textContent = response.stats.total;
+
+                // Show subtle update indicator
+                showUpdateIndicator('Network stats updated');
+            }
+        },
+        error: function() {
+            // Silently fail for live updates
+        }
+    });
+}
+
+function updateBalanceStatsFromServer() {
+    $.ajax({
+        url: '{{ route("ajax.dashboard.balance_stats") }}',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                // Update balance display if elements exist (for main dashboard integration)
+                const balanceElement = document.getElementById('current-balance');
+                const earningsElement = document.getElementById('total-earnings');
+                const pendingElement = document.getElementById('pending-earnings');
+
+                if (balanceElement) balanceElement.textContent = '₱' + response.balance;
+                if (earningsElement) earningsElement.textContent = '₱' + response.totalEarnings;
+                if (pendingElement) pendingElement.textContent = '₱' + response.pendingEarnings;
+
+                // Show subtle update indicator
+                showUpdateIndicator('Balance updated');
+            }
+        },
+        error: function() {
+            // Silently fail for live updates
+        }
+    });
+}
+
+function showUpdateIndicator(message) {
+    // Create a subtle notification
+    const indicator = document.createElement('div');
+    indicator.className = 'alert alert-info position-fixed';
+    indicator.style.cssText = 'top: 20px; right: 20px; z-index: 9999; font-size: 12px; padding: 8px 12px; opacity: 0; transition: opacity 0.3s;';
+    indicator.textContent = message;
+
+    document.body.appendChild(indicator);
+
+    // Fade in
+    setTimeout(() => indicator.style.opacity = '1', 100);
+
+    // Fade out and remove
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+            }
+        }, 300);
+    }, 2000);
+}
+
+// Start live updates
+startLiveUpdates();
 </script>

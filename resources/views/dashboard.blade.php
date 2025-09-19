@@ -444,9 +444,37 @@
                   <a href="{{ route('referrals.index') }}" class="btn btn-primary btn-sm">
                     <i class="fas fa-plus me-1"></i>Add New Member
                   </a>
-                  <a href="javascript:;" class="btn btn-outline-primary btn-sm" onclick="shareReferral()">
-                    <i class="fas fa-share me-1"></i>Share Link
-                  </a>
+                  <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="shareReferral()">
+                      <i class="fas fa-share me-1"></i>Share
+                    </button>
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-h"></i>
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="shareToFacebook()">
+                          <i class="fab fa-facebook me-2"></i>Facebook
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="shareToTwitter()">
+                          <i class="fab fa-twitter me-2"></i>Twitter
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="shareToWhatsApp()">
+                          <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="shareToTelegram()">
+                          <i class="fab fa-telegram me-2"></i>Telegram
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="copyReferralLink()">
+                          <i class="fas fa-copy me-2"></i>Copy Link
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="generateQRCode()">
+                          <i class="fas fa-qrcode me-2"></i>QR Code
+                        </a></li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -725,7 +753,7 @@
           });
       }
 
-      // Share referral link
+      // Enhanced share referral link with multiple options
       function shareReferral() {
           const referralLink = document.getElementById('referralLink').value;
           const shareText = `Join me in this amazing MLM opportunity! Use my referral code: ${referralLink}`;
@@ -735,13 +763,192 @@
                   title: 'Join Our MLM Network',
                   text: shareText,
                   url: referralLink
+              }).catch(function(err) {
+                  console.log('Error sharing:', err);
+                  fallbackShare(shareText);
               });
           } else {
-              // Fallback for browsers that don't support Web Share API
-              navigator.clipboard.writeText(shareText).then(function() {
-                  alert('Referral link copied to clipboard! Share it with your friends.');
-              });
+              fallbackShare(shareText);
           }
+      }
+
+      function fallbackShare(shareText) {
+          // Create a modal with sharing options
+          const modal = `
+              <div class="modal fade" id="shareModal" tabindex="-1">
+                  <div class="modal-dialog">
+                      <div class="modal-content">
+                          <div class="modal-header">
+                              <h5 class="modal-title">Share Your Referral Link</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body">
+                              <div class="mb-3">
+                                  <label class="form-label">Your Referral Link</label>
+                                  <div class="input-group">
+                                      <input type="text" class="form-control" value="${document.getElementById('referralLink').value}" readonly id="shareLinkInput">
+                                      <button class="btn btn-outline-primary" type="button" onclick="copyShareLink()">
+                                          <i class="fas fa-copy"></i>
+                                      </button>
+                                  </div>
+                              </div>
+                              <div class="row g-2">
+                                  <div class="col-6">
+                                      <button class="btn btn-outline-primary w-100" onclick="shareToFacebook()">
+                                          <i class="fab fa-facebook me-2"></i>Facebook
+                                      </button>
+                                  </div>
+                                  <div class="col-6">
+                                      <button class="btn btn-outline-info w-100" onclick="shareToTwitter()">
+                                          <i class="fab fa-twitter me-2"></i>Twitter
+                                      </button>
+                                  </div>
+                                  <div class="col-6">
+                                      <button class="btn btn-outline-success w-100" onclick="shareToWhatsApp()">
+                                          <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                                      </button>
+                                  </div>
+                                  <div class="col-6">
+                                      <button class="btn btn-outline-primary w-100" onclick="shareToTelegram()">
+                                          <i class="fab fa-telegram me-2"></i>Telegram
+                                      </button>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          document.body.insertAdjacentHTML('beforeend', modal);
+          const modalElement = new bootstrap.Modal(document.getElementById('shareModal'));
+          modalElement.show();
+
+          // Clean up modal when hidden
+          document.getElementById('shareModal').addEventListener('hidden.bs.modal', function() {
+              this.remove();
+          });
+      }
+
+      function copyShareLink() {
+          const input = document.getElementById('shareLinkInput');
+          input.select();
+          input.setSelectionRange(0, 99999);
+          navigator.clipboard.writeText(input.value).then(function() {
+              showShareNotification('Link copied to clipboard!', 'success');
+          });
+      }
+
+      // Social media sharing functions
+      function shareToFacebook() {
+          const url = document.getElementById('referralLink').value;
+          const text = encodeURIComponent('Join me in this amazing MLM opportunity!');
+          const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${text}`;
+          window.open(shareUrl, '_blank', 'width=600,height=400');
+      }
+
+      function shareToTwitter() {
+          const url = document.getElementById('referralLink').value;
+          const text = encodeURIComponent('Join me in this amazing MLM opportunity! Use my referral link: ');
+          const shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`;
+          window.open(shareUrl, '_blank', 'width=600,height=400');
+      }
+
+      function shareToWhatsApp() {
+          const url = document.getElementById('referralLink').value;
+          const text = encodeURIComponent('Join me in this amazing MLM opportunity! Use my referral link: ' + url);
+          const shareUrl = `https://wa.me/?text=${text}`;
+          window.open(shareUrl, '_blank');
+      }
+
+      function shareToTelegram() {
+          const url = document.getElementById('referralLink').value;
+          const text = encodeURIComponent('Join me in this amazing MLM opportunity! Use my referral link: ' + url);
+          const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${text}`;
+          window.open(shareUrl, '_blank');
+      }
+
+      function generateQRCode() {
+          const url = document.getElementById('referralLink').value;
+
+          // Create QR code modal
+          const qrModal = `
+              <div class="modal fade" id="qrModal" tabindex="-1">
+                  <div class="modal-dialog">
+                      <div class="modal-content">
+                          <div class="modal-header">
+                              <h5 class="modal-title">QR Code for Your Referral Link</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body text-center">
+                              <div id="qrcode" class="mb-3"></div>
+                              <p class="text-muted small">Scan this QR code to join using your referral link</p>
+                              <button class="btn btn-outline-primary btn-sm" onclick="downloadQRCode()">
+                                  <i class="fas fa-download me-1"></i>Download QR Code
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          document.body.insertAdjacentHTML('beforeend', qrModal);
+
+          // Generate QR code
+          const qrCodeElement = document.getElementById('qrcode');
+          if (typeof QRCode !== 'undefined') {
+              new QRCode(qrCodeElement, {
+                  text: url,
+                  width: 200,
+                  height: 200,
+                  colorDark: "#000000",
+                  colorLight: "#ffffff",
+                  correctLevel: QRCode.CorrectLevel.H
+              });
+          } else {
+              // Fallback if QRCode library is not loaded
+              qrCodeElement.innerHTML = `
+                  <div class="alert alert-info">
+                      <i class="fas fa-info-circle me-2"></i>
+                      QR Code library not available. Please use the share link instead.
+                  </div>
+              `;
+          }
+
+          const modalElement = new bootstrap.Modal(document.getElementById('qrModal'));
+          modalElement.show();
+
+          // Clean up modal when hidden
+          document.getElementById('qrModal').addEventListener('hidden.bs.modal', function() {
+              this.remove();
+          });
+      }
+
+      function downloadQRCode() {
+          const canvas = document.querySelector('#qrcode canvas');
+          if (canvas) {
+              const link = document.createElement('a');
+              link.download = 'referral-qr-code.png';
+              link.href = canvas.toDataURL();
+              link.click();
+          }
+      }
+
+      function showShareNotification(message, type) {
+          const notification = document.createElement('div');
+          notification.className = `alert alert-${type} position-fixed`;
+          notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+          notification.innerHTML = `
+              <i class="fas fa-${type === 'success' ? 'check' : 'info'}-circle me-2"></i>
+              ${message}
+          `;
+
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+              notification.style.opacity = '0';
+              setTimeout(() => notification.remove(), 300);
+          }, 3000);
       }
 
       // AJAX functionality for live updates
@@ -795,6 +1002,9 @@
           updateDashboardStats();
       });
   </script>
+
+  <!-- QR Code Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- Custom Chart Scripts for MLM Dashboard -->
   <script>
@@ -1360,17 +1570,145 @@
       });
   }
 
-  // Filter functions for charts
+  // Filter functions for charts with dynamic data loading
   function filterNetworkChart(period) {
-      // In real app, this would fetch new data based on period
-      console.log('Filtering network chart for period:', period);
-      // renderNetworkPerformanceChart(); // Re-render with new data
+      showChartLoading('network-performance-chart');
+
+      fetch(`/ajax/dashboard/network-data?period=${period}`)
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  renderNetworkPerformanceChart(data.networkData);
+              } else {
+                  showChartError('network-performance-chart', 'Failed to load network data');
+              }
+          })
+          .catch(error => {
+              console.error('Error filtering network chart:', error);
+              showChartError('network-performance-chart', 'Network error occurred');
+          });
   }
 
   function filterSalesChart(period) {
-      // In real app, this would fetch new data based on period
-      console.log('Filtering sales chart for period:', period);
-      // renderSalesAnalyticsChart(); // Re-render with new data
+      showChartLoading('sales-analytics-chart');
+
+      fetch(`/ajax/dashboard/sales-data?period=${period}`)
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  renderSalesAnalyticsChart(data.salesData);
+              } else {
+                  showChartError('sales-analytics-chart', 'Failed to load sales data');
+              }
+          })
+          .catch(error => {
+              console.error('Error filtering sales chart:', error);
+              showChartError('sales-analytics-chart', 'Network error occurred');
+          });
+  }
+
+  // Enhanced chart loading with loading states
+  function loadChartData() {
+      // Show loading states for all charts
+      showChartLoading('earnings-breakdown-chart');
+      showChartLoading('network-performance-chart');
+      showChartLoading('sales-analytics-chart');
+      showChartLoading('account-balance-mini-chart');
+
+      // Fetch earnings and network data
+      fetch('/ajax/dashboard/charts')
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  renderEarningsChart(data.earnings);
+                  renderNetworkChart(data.network);
+                  renderEarningsBreakdownChart(data.earningsBreakdown);
+                  renderNetworkPerformanceChart(data.networkPerformance);
+                  renderSalesAnalyticsChart(data.salesData);
+                  renderAccountBalanceMiniChart(data.balanceData);
+
+                  // Update dashboard stats
+                  updateDashboardStats(data.stats);
+              } else {
+                  showChartError('earnings-breakdown-chart', 'Failed to load chart data');
+                  showChartError('network-performance-chart', 'Failed to load chart data');
+                  showChartError('sales-analytics-chart', 'Failed to load chart data');
+                  showChartError('account-balance-mini-chart', 'Failed to load chart data');
+              }
+          })
+          .catch(error => {
+              console.error('Error loading chart data:', error);
+              showChartError('earnings-breakdown-chart', 'Network error occurred');
+              showChartError('network-performance-chart', 'Network error occurred');
+              showChartError('sales-analytics-chart', 'Network error occurred');
+              showChartError('account-balance-mini-chart', 'Network error occurred');
+          });
+  }
+
+  function showChartLoading(chartId) {
+      const canvas = document.getElementById(chartId);
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw loading text
+      ctx.fillStyle = '#6c757d';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Loading...', width / 2, height / 2);
+  }
+
+  function showChartError(chartId, message) {
+      const canvas = document.getElementById(chartId);
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw error text
+      ctx.fillStyle = '#dc3545';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(message, width / 2, height / 2 - 10);
+
+      // Draw retry button area (visual indication)
+      ctx.fillStyle = '#6c757d';
+      ctx.font = '10px Arial';
+      ctx.fillText('Click to retry', width / 2, height / 2 + 10);
+  }
+
+  function updateDashboardStats(stats) {
+      if (stats) {
+          // Update various dashboard elements with real-time data
+          const balanceElement = document.querySelector('.card:contains("Account Balance") h5');
+          if (balanceElement && stats.balance) {
+              balanceElement.textContent = '₱' + new Intl.NumberFormat().format(stats.balance);
+          }
+
+          const earningsElement = document.querySelector('.card:contains("Total Earnings") h5');
+          if (earningsElement && stats.totalEarnings) {
+              earningsElement.textContent = '₱' + new Intl.NumberFormat().format(stats.totalEarnings);
+          }
+
+          const pendingElement = document.querySelector('.card:contains("Pending Earnings") h5');
+          if (pendingElement && stats.pendingEarnings) {
+              pendingElement.textContent = '₱' + new Intl.NumberFormat().format(stats.pendingEarnings);
+          }
+
+          const downlinesElement = document.querySelector('.card:contains("My Downlines") h5');
+          if (downlinesElement && stats.downlinesCount) {
+              downlinesElement.textContent = stats.downlinesCount;
+          }
+      }
   }
 
   // Auto-refresh charts every 5 minutes

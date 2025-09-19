@@ -85,6 +85,56 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function ajaxNetworkStats()
+    {
+        $user = Auth::user();
+        $binaryTreeService = new BinaryTreeService();
+        $networkTree = $binaryTreeService->buildBinaryTreeForView($user, 0, 10);
+
+        // Calculate network statistics
+        $level1Count = $networkTree['children'] ? count($networkTree['children']) : 0;
+        $level2Count = 0;
+        $level3Count = 0;
+
+        if ($networkTree['children']) {
+            $networkTree['children']->each(function($child) use (&$level2Count, &$level3Count) {
+                if ($child['children']) {
+                    $level2Count += count($child['children']);
+                    $child['children']->each(function($grandchild) use (&$level3Count) {
+                        if ($grandchild['children']) {
+                            $level3Count += count($grandchild['children']);
+                        }
+                    });
+                }
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'stats' => [
+                'level1' => $level1Count,
+                'level2' => $level2Count,
+                'level3' => $level3Count,
+                'total' => $level1Count + $level2Count + $level3Count
+            ]
+        ]);
+    }
+
+    public function ajaxBalanceStats()
+    {
+        $user = Auth::user();
+        $dashboardService = new DashboardService();
+        $dashboardData = $dashboardService->getDashboardData($user);
+
+        return response()->json([
+            'success' => true,
+            'balance' => $dashboardData['balance'],
+            'totalEarnings' => $dashboardData['totalEarnings'],
+            'pendingEarnings' => $dashboardData['pendingEarnings'],
+            'totalWithdrawals' => $dashboardData['totalWithdrawals']
+        ]);
+    }
+
     public function notification()
     {
         $user = Auth::user();
@@ -100,6 +150,58 @@ class DashboardController extends Controller
         }
 
         return view('dashboard-notification', compact('notifications'));
+    }
+
+    public function ajaxNetworkData(Request $request)
+    {
+        $user = Auth::user();
+        $period = $request->get('period', '30d'); // 7d, 30d, 90d
+
+        $dashboardService = new DashboardService();
+        $networkData = $dashboardService->getNetworkDataForPeriod($user, $period);
+
+        return response()->json([
+            'success' => true,
+            'networkData' => $networkData
+        ]);
+    }
+
+    public function ajaxSalesData(Request $request)
+    {
+        $user = Auth::user();
+        $period = $request->get('period', 'monthly'); // weekly, monthly, yearly
+
+        $dashboardService = new DashboardService();
+        $salesData = $dashboardService->getSalesDataForPeriod($user, $period);
+
+        return response()->json([
+            'success' => true,
+            'salesData' => $salesData
+        ]);
+    }
+
+    public function ajaxEarningsBreakdown()
+    {
+        $user = Auth::user();
+        $dashboardService = new DashboardService();
+        $earningsBreakdown = $dashboardService->getEarningsBreakdownData($user);
+
+        return response()->json([
+            'success' => true,
+            'earningsBreakdown' => $earningsBreakdown
+        ]);
+    }
+
+    public function ajaxBalanceData()
+    {
+        $user = Auth::user();
+        $dashboardService = new DashboardService();
+        $balanceData = $dashboardService->getBalanceTrendData($user);
+
+        return response()->json([
+            'success' => true,
+            'balanceData' => $balanceData
+        ]);
     }
 
 }
