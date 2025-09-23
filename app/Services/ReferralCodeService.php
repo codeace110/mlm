@@ -8,15 +8,10 @@ use Illuminate\Support\Str;
 
 class ReferralCodeService
 {
-    public function generateCodes(User $admin, int $count = 50)
+    public function generateCodes(User $admin, int $count = 50, ?User $assignTo = null)
     {
-        // Check if there are any unused codes from previous batches
-        $unusedCodes = ReferralCode::whereIn('status', ['available', 'assigned'])->count();
-        if ($unusedCodes > 0) {
-            throw new \Exception('Cannot generate new codes while unused codes exist. All codes must be used before generating a new batch.');
-        }
-
         $codes = [];
+        $batchId = now()->format('YmdHis') . '-' . $admin->id;
 
         for ($i = 0; $i < $count; $i++) {
             do {
@@ -26,11 +21,22 @@ class ReferralCodeService
             $codes[] = ReferralCode::create([
                 'code' => $code,
                 'generated_by' => $admin->id,
-                'status' => 'available',
+                'assigned_to' => $assignTo?->id,
+                'status' => $assignTo ? 'assigned' : 'available',
+                'batch_id' => $batchId,
             ]);
         }
 
         return $codes;
+    }
+
+    public function generateBulkCodes(User $admin, array $options = [])
+    {
+        $count = $options['count'] ?? 50;
+        $assignTo = isset($options['distributor_id']) ? User::find($options['distributor_id']) : null;
+        $prefix = $options['prefix'] ?? null;
+
+        return $this->generateCodes($admin, $count, $assignTo);
     }
 
     private function generateSecureCode(): string
@@ -90,6 +96,45 @@ class ReferralCodeService
             'assigned' => $assigned,
             'available' => $available,
             'expired' => $expired,
+            'usage_rate' => $total > 0 ? round(($used / $total) * 100, 2) : 0,
         ];
+    }
+
+    public function getCodesByBatch(string $batchId)
+    {
+        return ReferralCode::where('batch_id', $batchId)
+            ->with(['assignedTo', 'usedBy', 'generatedBy'])
+            ->orderBy('created_at')
+            ->get();
+    }
+
+    public function getDistributorCodes(User $distributor)
+    {
+        return ReferralCode::where('assigned_to', $distributor->id)
+            ->with(['usedBy'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    public function getUsedCodesByUser(User $user)
+    {
+        return ReferralCode::where('used_by', $user->id)
+            ->with(['assignedTo', 'generatedBy'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+    }
+
+    public function expireUnusedCodes()
+    {
+        return ReferralCode::where('status', 'available')
+            ->where('expires_at', '<', now())
+            ->update(['status' => 'expired']);
+    }
+
+    public function getAvailableCodesForAssignment()
+    {
+        return ReferralCode::where('status', 'available')
+            ->orderBy('created_at')
+            ->get();
     }
 }

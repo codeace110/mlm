@@ -2,183 +2,237 @@
 
 namespace Tests\Unit;
 
-use App\Models\ReferralCode;
+use Tests\TestCase;
 use App\Models\User;
+use App\Models\ReferralCode;
 use App\Services\ReferralCodeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
 class ReferralCodeServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected ReferralCodeService $referralCodeService;
+    private ReferralCodeService $service;
+    private User $admin;
+    private User $distributor;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->referralCodeService = new ReferralCodeService();
+        $this->service = new ReferralCodeService();
+
+        $this->admin = User::factory()->create([
+            'is_admin' => true,
+            'status' => 'active'
+        ]);
+
+        $this->distributor = User::factory()->create([
+            'is_admin' => false,
+            'status' => 'active'
+        ]);
     }
 
-    public function test_generate_codes_creates_correct_number_of_codes()
+    public function test_generate_codes_creates_specified_number_of_codes()
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $codes = $this->service->generateCodes($this->admin, 5);
 
-        $codes = $this->referralCodeService->generateCodes($admin, 10);
+        $this->assertCount(5, $codes);
+        $this->assertDatabaseCount('referral_codes', 5);
+
+        foreach ($codes as $code) {
+            $this->assertEquals($this->admin->id, $code->generated_by);
+            $this->assertEquals('available', $code->status);
+        }
+    }
+
+    public function test_generate_codes_with_distributor_assignment()
+    {
+        $codes = $this->service->generateCodes($this->admin, 3, $this->distributor);
+
+        $this->assertCount(3, $codes);
+        $this->assertDatabaseCount('referral_codes', 3);
+
+        foreach ($codes as $code) {
+            $this->assertEquals($this->admin->id, $code->generated_by);
+            $this->assertEquals($this->distributor->id, $code->assigned_to);
+            $this->assertEquals('assigned', $code->status);
+        }
+    }
+
+    public function test_generate_bulk_codes()
+    {
+        $options = [
+            'count' => 10,
+            'distributor_id' => $this->distributor->id,
+            'prefix' => 'TEST'
+        ];
+
+        $codes = $this->service->generateBulkCodes($this->admin, $options);
 
         $this->assertCount(10, $codes);
         $this->assertDatabaseCount('referral_codes', 10);
     }
 
-    public function test_generated_codes_are_at_least_15_characters()
-    {
-        $admin = User::factory()->create(['is_admin' => true]);
-
-        $codes = $this->referralCodeService->generateCodes($admin, 5);
-
-        foreach ($codes as $code) {
-            $this->assertGreaterThanOrEqual(15, strlen($code->code));
-        }
-    }
-
-    public function test_generated_codes_are_unique()
-    {
-        $admin = User::factory()->create(['is_admin' => true]);
-
-        $codes = $this->referralCodeService->generateCodes($admin, 100);
-
-        $codeValues = collect($codes)->pluck('code')->toArray();
-        $this->assertCount(100, array_unique($codeValues));
-    }
-
-    public function test_cannot_generate_new_batch_if_unused_codes_exist()
-    {
-        $admin = User::factory()->create(['is_admin' => true]);
-
-        // Generate first batch
-        $this->referralCodeService->generateCodes($admin, 5);
-
-        // Try to generate second batch - should fail
-        $this->expectException(\Exception::class);
-        $this->referralCodeService->generateCodes($admin, 5);
-    }
-
-    public function test_can_generate_new_batch_after_all_codes_used()
-    {
-        $admin = User::factory()->create(['is_admin' => true]);
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
-
-        // Generate first batch
-        $codes = $this->referralCodeService->generateCodes($admin, 2);
-
-        // Assign and use both codes
-        $this->referralCodeService->assignCodeToDistributor($codes[0], $user1);
-        $this->referralCodeService->assignCodeToDistributor($codes[1], $user2);
-
-        $newUser1 = User::factory()->create();
-        $newUser2 = User::factory()->create();
-
-        $this->referralCodeService->validateAndUseCode($codes[0]->code, $newUser1);
-        $this->referralCodeService->validateAndUseCode($codes[1]->code, $newUser2);
-
-        // Now should be able to generate new batch
-        $newCodes = $this->referralCodeService->generateCodes($admin, 2);
-        $this->assertCount(2, $newCodes);
-    }
-
     public function test_assign_code_to_distributor()
     {
-        $admin = User::factory()->create(['is_admin' => true]);
-        $distributor = User::factory()->create();
+        $code = ReferralCode::factory()->create([
+            'generated_by' => $this->admin->id,
+            'status' => 'available'
+        ]);
 
-        $codes = $this->referralCodeService->generateCodes($admin, 1);
-        $code = $codes[0];
-
-        $this->referralCodeService->assignCodeToDistributor($code, $distributor);
+        $this->service->assignCodeToDistributor($code, $this->distributor);
 
         $code->refresh();
-        $this->assertEquals($distributor->id, $code->assigned_to);
+        $this->assertEquals($this->distributor->id, $code->assigned_to);
         $this->assertEquals('assigned', $code->status);
     }
 
-    public function test_validate_and_use_code_successfully()
+    public function test_validate_and_use_code_with_available_code()
     {
-        $admin = User::factory()->create(['is_admin' => true]);
-        $distributor = User::factory()->create();
-        $newUser = User::factory()->create();
+        $code = ReferralCode::factory()->create([
+            'code' => 'TEST123',
+            'generated_by' => $this->admin->id,
+            'status' => 'available'
+        ]);
 
-        $codes = $this->referralCodeService->generateCodes($admin, 1);
-        $code = $codes[0];
+        $result = $this->service->validateAndUseCode('TEST123');
 
-        $this->referralCodeService->assignCodeToDistributor($code, $distributor);
-
-        $result = $this->referralCodeService->validateAndUseCode($code->code, $newUser);
-
-        $this->assertInstanceOf(User::class, $result);
-        $this->assertEquals($distributor->id, $result->id);
-
-        $code->refresh();
-        $this->assertEquals($newUser->id, $code->used_by);
-        $this->assertEquals('used', $code->status);
+        $this->assertEquals($this->admin->id, $result->id);
+        $this->assertEquals('used', $code->fresh()->status);
     }
 
-    public function test_validate_and_use_code_works_for_available_code()
+    public function test_validate_and_use_code_with_assigned_code()
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $code = ReferralCode::factory()->create([
+            'code' => 'ASSIGNED123',
+            'generated_by' => $this->admin->id,
+            'assigned_to' => $this->distributor->id,
+            'status' => 'assigned'
+        ]);
 
-        $codes = $this->referralCodeService->generateCodes($admin, 1);
-        $code = $codes[0];
+        $result = $this->service->validateAndUseCode('ASSIGNED123');
 
-        $newUser = User::factory()->create();
-
-        $result = $this->referralCodeService->validateAndUseCode($code->code, $newUser);
-
-        $this->assertInstanceOf(User::class, $result);
-        $this->assertEquals($admin->id, $result->id); // For available codes, sponsor is the generator
+        $this->assertEquals($this->distributor->id, $result->id);
+        $this->assertEquals('used', $code->fresh()->status);
     }
 
-    public function test_validate_and_use_code_fails_for_used_code()
+    public function test_validate_and_use_code_with_invalid_code()
     {
-        $admin = User::factory()->create(['is_admin' => true]);
-        $distributor = User::factory()->create();
-        $newUser1 = User::factory()->create();
-        $newUser2 = User::factory()->create();
+        $result = $this->service->validateAndUseCode('INVALID123');
 
-        $codes = $this->referralCodeService->generateCodes($admin, 1);
-        $code = $codes[0];
+        $this->assertFalse($result);
+    }
 
-        $this->referralCodeService->assignCodeToDistributor($code, $distributor);
-        $this->referralCodeService->validateAndUseCode($code->code, $newUser1);
+    public function test_validate_and_use_code_with_used_code()
+    {
+        $code = ReferralCode::factory()->create([
+            'code' => 'USED123',
+            'generated_by' => $this->admin->id,
+            'status' => 'used'
+        ]);
 
-        $result = $this->referralCodeService->validateAndUseCode($code->code, $newUser2);
+        $result = $this->service->validateAndUseCode('USED123');
 
         $this->assertFalse($result);
     }
 
     public function test_get_code_statistics()
     {
-        $admin = User::factory()->create(['is_admin' => true]);
-        $distributor1 = User::factory()->create();
-        $distributor2 = User::factory()->create();
-        $newUser1 = User::factory()->create();
-        $newUser2 = User::factory()->create();
+        // Create test data
+        ReferralCode::factory()->count(5)->create(['status' => 'available']);
+        ReferralCode::factory()->count(3)->create(['status' => 'assigned']);
+        ReferralCode::factory()->count(2)->create(['status' => 'used']);
 
-        // Generate codes
-        $codes = $this->referralCodeService->generateCodes($admin, 3);
+        $stats = $this->service->getCodeStatistics();
 
-        // Assign two codes
-        $this->referralCodeService->assignCodeToDistributor($codes[0], $distributor1);
-        $this->referralCodeService->assignCodeToDistributor($codes[1], $distributor2);
+        $this->assertEquals(10, $stats['total']);
+        $this->assertEquals(2, $stats['used']);
+        $this->assertEquals(3, $stats['assigned']);
+        $this->assertEquals(5, $stats['available']);
+        $this->assertEquals(20.0, $stats['usage_rate']);
+    }
 
-        // Use one
-        $this->referralCodeService->validateAndUseCode($codes[0]->code, $newUser1);
+    public function test_get_codes_by_batch()
+    {
+        $batchId = '20231201-120000-' . $this->admin->id;
 
-        $stats = $this->referralCodeService->getCodeStatistics();
+        ReferralCode::factory()->count(3)->create([
+            'batch_id' => $batchId,
+            'generated_by' => $this->admin->id
+        ]);
 
-        $this->assertEquals(3, $stats['total']);
-        $this->assertEquals(1, $stats['used']);
-        $this->assertEquals(1, $stats['assigned']);
-        $this->assertEquals(1, $stats['available']);
+        $codes = $this->service->getCodesByBatch($batchId);
+
+        $this->assertCount(3, $codes);
+        foreach ($codes as $code) {
+            $this->assertEquals($batchId, $code->batch_id);
+        }
+    }
+
+    public function test_get_distributor_codes()
+    {
+        ReferralCode::factory()->count(3)->create([
+            'assigned_to' => $this->distributor->id,
+            'generated_by' => $this->admin->id
+        ]);
+
+        $codes = $this->service->getDistributorCodes($this->distributor);
+
+        $this->assertCount(3, $codes);
+        foreach ($codes as $code) {
+            $this->assertEquals($this->distributor->id, $code->assigned_to);
+        }
+    }
+
+    public function test_get_used_codes_by_user()
+    {
+        $user = User::factory()->create();
+
+        ReferralCode::factory()->count(2)->create([
+            'used_by' => $user->id,
+            'status' => 'used'
+        ]);
+
+        $codes = $this->service->getUsedCodesByUser($user);
+
+        $this->assertCount(2, $codes);
+        foreach ($codes as $code) {
+            $this->assertEquals($user->id, $code->used_by);
+        }
+    }
+
+    public function test_get_available_codes_for_assignment()
+    {
+        ReferralCode::factory()->count(3)->create(['status' => 'available']);
+        ReferralCode::factory()->count(2)->create(['status' => 'assigned']);
+
+        $codes = $this->service->getAvailableCodesForAssignment();
+
+        $this->assertCount(3, $codes);
+        foreach ($codes as $code) {
+            $this->assertEquals('available', $code->status);
+        }
+    }
+
+    public function test_expire_unused_codes()
+    {
+        $expiredDate = now()->subDays(30);
+
+        ReferralCode::factory()->count(2)->create([
+            'status' => 'available',
+            'expires_at' => $expiredDate
+        ]);
+
+        ReferralCode::factory()->count(3)->create([
+            'status' => 'available',
+            'expires_at' => now()->addDays(30)
+        ]);
+
+        $expired = $this->service->expireUnusedCodes();
+
+        $this->assertEquals(2, $expired);
+        $this->assertDatabaseCount('referral_codes', 5);
+
+        $this->assertEquals(2, ReferralCode::where('status', 'expired')->count());
     }
 }

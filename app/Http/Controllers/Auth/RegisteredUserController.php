@@ -57,9 +57,13 @@ class RegisteredUserController extends Controller
         // Now mark as used
         $referralCodeService->validateAndUseCode($request->referral_code, $user);
 
-        // Place user in binary tree
+        // Place user in binary tree using new placement service
+        $placementService = new \App\Services\BinaryTreePlacementService();
+        $placementResult = $placementService->placeUser($user, $sponsor, $request->preferred_side);
+
+        // Process balancer for uplines
         $binaryBalancerService = new BinaryBalancerService();
-        $binaryBalancerService->placeUser($user, $sponsor, $request->preferred_side);
+        $binaryBalancerService->processBalancerForUplines($user);
 
         // Create notification for sponsor
         $notificationService = new NotificationService();

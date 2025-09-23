@@ -5,11 +5,41 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\BinaryTree;
 use App\Models\Bonus;
+use App\Models\Referral;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class BinaryBalancerService
 {
+    /**
+     * Balancer modes configuration
+     */
+    private const MODES = [
+        '1:1' => ['left_ratio' => 1, 'right_ratio' => 1, 'description' => 'Strict 1:1 matching'],
+        '2:1' => ['left_ratio' => 2, 'right_ratio' => 1, 'description' => '2 left + 1 right = 1 pair'],
+        '3:1' => ['left_ratio' => 3, 'right_ratio' => 1, 'description' => '3 left + 1 right = 1 pair'],
+        'carryover' => ['left_ratio' => 1, 'right_ratio' => 1, 'carryover' => true, 'description' => 'Carryover mode']
+    ];
+
+    /**
+     * Volume per recruit
+     */
+    private $volumePerRecruit = 1;
+
+    /**
+     * Direct bonus amount
+     */
+    private $directBonusAmount = 100;
+
+    /**
+     * Pair bonus amount
+     */
+    private $pairBonusAmount = 100;
+
+    /**
+     * Product reward interval (every N pairs)
+     */
+    private $productRewardInterval = 5;
     /**
      * Place a new user in the binary tree and trigger bonus calculations
      */
@@ -28,11 +58,144 @@ class BinaryBalancerService
             $this->placeInBinaryTree($newUser, $sponsor, $preferredSide);
 
             // After placement, propagate volume and calculate bonuses
-            $volume = config('binary_balancer.volume_per_recruit', 1);
-            $this->propagateVolumeUp($newUser, $volume);
+            $this->propagateVolumeUp($newUser, $this->volumePerRecruit);
             $this->calculateDirectBonus($sponsor);
-            $this->processDownlineQuotasForUplines($newUser);
+            $this->processBalancerForUplines($newUser);
         });
+    }
+
+    /**
+     * Process balancer for all uplines with proper mode support
+     */
+    public function processBalancerForUplines(User $placedUser): void
+    {
+        $current = $placedUser;
+        $depth = 0;
+        $maxDepth = config('binary_balancer.max_upline_depth', 1000);
+
+        while ($current->sponsor_id && $depth < $maxDepth) {
+            $sponsor = User::find($current->sponsor_id);
+            $this->processUserBalancer($sponsor);
+            $current = $sponsor;
+            $depth++;
+        }
+    }
+
+    /**
+     * Process balancer for a specific user with their configured mode
+     */
+    public function processUserBalancer(User $user): void
+    {
+        $tree = BinaryTree::where('user_id', $user->id)->firstOrCreate(['user_id' => $user->id]);
+
+        if (!$tree) return;
+
+        $mode = $user->balancing_mode ?? '1:1';
+        $modeConfig = self::MODES[$mode] ?? self::MODES['1:1'];
+
+        // Calculate available volumes
+        $leftVolume = (float) $tree->left_volume;
+        $rightVolume = (float) $tree->right_volume;
+        $carryoverLeft = (float) $tree->carryover_left;
+        $carryoverRight = (float) $tree->carryover_right;
+
+        $totalLeft = $leftVolume + $carryoverLeft;
+        $totalRight = $rightVolume + $carryoverRight;
+
+        if ($modeConfig['carryover'] ?? false) {
+            $this->processCarryoverMode($user, $tree, $totalLeft, $totalRight);
+        } else {
+            $this->processRatioMode($user, $tree, $totalLeft, $totalRight, $modeConfig);
+        }
+    }
+
+    /**
+     * Process carryover mode (1:1 with carryover)
+     */
+    private function processCarryoverMode(User $user, BinaryTree $tree, float $totalLeft, float $totalRight): void
+    {
+        $pairs = min($totalLeft, $totalRight);
+
+        if ($pairs >= 1) {
+            $this->createPairBonuses($user, $pairs);
+
+            // Update consumed volumes
+            $tree->left_consumed += $pairs;
+            $tree->right_consumed += $pairs;
+
+            // Calculate remaining carryover
+            $remainingLeft = $totalLeft - $pairs;
+            $remainingRight = $totalRight - $pairs;
+
+            $tree->carryover_left = max(0, $remainingLeft - ($tree->left_volume - $tree->left_consumed));
+            $tree->carryover_right = max(0, $remainingRight - ($tree->right_volume - $tree->right_consumed));
+
+            $tree->save();
+        }
+    }
+
+    /**
+     * Process ratio mode (2:1, 3:1, etc.)
+     */
+    private function processRatioMode(User $user, BinaryTree $tree, float $totalLeft, float $totalRight, array $modeConfig): void
+    {
+        $leftRatio = $modeConfig['left_ratio'];
+        $rightRatio = $modeConfig['right_ratio'];
+
+        $maxPairs = min(
+            floor($totalLeft / $leftRatio),
+            floor($totalRight / $rightRatio)
+        );
+
+        if ($maxPairs >= 1) {
+            $this->createPairBonuses($user, $maxPairs);
+
+            // Update consumed volumes
+            $leftConsumed = $maxPairs * $leftRatio;
+            $rightConsumed = $maxPairs * $rightRatio;
+
+            $tree->left_consumed += $leftConsumed;
+            $tree->right_consumed += $rightConsumed;
+
+            // Calculate remaining carryover
+            $remainingLeft = $totalLeft - $leftConsumed;
+            $remainingRight = $totalRight - $rightConsumed;
+
+            $tree->carryover_left = max(0, $remainingLeft - ($tree->left_volume - $tree->left_consumed));
+            $tree->carryover_right = max(0, $remainingRight - ($tree->right_volume - $tree->right_consumed));
+
+            $tree->save();
+        }
+    }
+
+    /**
+     * Create pair bonuses for matched pairs
+     */
+    private function createPairBonuses(User $user, int $pairs): void
+    {
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+
+        for ($i = 0; $i < $pairs; $i++) {
+            $pairNumber = ($tree->reward_count ?? 0) + $i + 1;
+            $isProduct = ($pairNumber % $this->productRewardInterval) === 0;
+
+            Bonus::create([
+                'user_id' => $user->id,
+                'amount' => $isProduct ? 0 : $this->pairBonusAmount,
+                'is_product' => $isProduct,
+                'reward_type' => 'pair',
+                'pair_count' => 1,
+                'description' => $isProduct
+                    ? "Product reward for {$pairNumber}th matched pair"
+                    : "Pair matching bonus for {$pairNumber}th pair",
+                'status' => 'pending',
+            ]);
+        }
+
+        if ($tree) {
+            $tree->reward_count += $pairs;
+            $tree->save();
+        }
     }
 
     /**
@@ -79,12 +242,83 @@ class BinaryBalancerService
             $newPairs = max(0, $pairsAvailable - $tree->direct_pairs_paid);
 
             for ($i = 0; $i < $newPairs; $i++) {
-                $this->issueReward($user, 'direct');
+                $pairNumber = ($tree->direct_pairs_paid ?? 0) + $i + 1;
+                $isProduct = ($pairNumber % $this->productRewardInterval) === 0;
+
+                Bonus::create([
+                    'user_id' => $user->id,
+                    'amount' => $isProduct ? 0 : $this->directBonusAmount,
+                    'is_product' => $isProduct,
+                    'reward_type' => 'direct',
+                    'pair_count' => 1,
+                    'description' => $isProduct
+                        ? "Direct referral product reward for {$pairNumber}th pair"
+                        : "Direct referral bonus for {$pairNumber}th pair",
+                    'status' => 'pending',
+                ]);
             }
 
             $tree->direct_pairs_paid += $newPairs;
             $tree->save();
         });
+    }
+
+    /**
+     * Get available balancer modes
+     */
+    public static function getAvailableModes(): array
+    {
+        return self::MODES;
+    }
+
+    /**
+     * Get mode configuration
+     */
+    public static function getModeConfig(string $mode): ?array
+    {
+        return self::MODES[$mode] ?? null;
+    }
+
+    /**
+     * Calculate potential pairs for a user without processing
+     */
+    public function calculatePotentialPairs(User $user): array
+    {
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+
+        if (!$tree) {
+            return ['pairs' => 0, 'left_available' => 0, 'right_available' => 0];
+        }
+
+        $mode = $user->balancing_mode ?? '1:1';
+        $modeConfig = self::MODES[$mode] ?? self::MODES['1:1'];
+
+        $leftVolume = (float) $tree->left_volume;
+        $rightVolume = (float) $tree->right_volume;
+        $carryoverLeft = (float) $tree->carryover_left;
+        $carryoverRight = (float) $tree->carryover_right;
+
+        $totalLeft = $leftVolume + $carryoverLeft;
+        $totalRight = $rightVolume + $carryoverRight;
+
+        if ($modeConfig['carryover'] ?? false) {
+            $pairs = min($totalLeft, $totalRight);
+        } else {
+            $leftRatio = $modeConfig['left_ratio'];
+            $rightRatio = $modeConfig['right_ratio'];
+            $pairs = min(
+                floor($totalLeft / $leftRatio),
+                floor($totalRight / $rightRatio)
+            );
+        }
+
+        return [
+            'pairs' => (int) $pairs,
+            'left_available' => $totalLeft,
+            'right_available' => $totalRight,
+            'mode' => $mode,
+            'mode_description' => $modeConfig['description']
+        ];
     }
 
     /**
