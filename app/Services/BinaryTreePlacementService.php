@@ -56,8 +56,8 @@ class BinaryTreePlacementService
             [
                 'left_volume' => 0,
                 'right_volume' => 0,
-                'carryover_left' => 0,
-                'carryover_right' => 0,
+                'left_spillover' => 0,
+                'right_spillover' => 0,
                 'total_left_volume' => 0,
                 'total_right_volume' => 0,
                 'left_consumed' => 0,
@@ -251,8 +251,8 @@ class BinaryTreePlacementService
      */
     private function getWeakerLeg(BinaryTree $tree): string
     {
-        $leftVol = (float) ($tree->left_volume ?? 0) + (float) ($tree->carryover_left ?? 0);
-        $rightVol = (float) ($tree->right_volume ?? 0) + (float) ($tree->carryover_right ?? 0);
+        $leftVol = (float) ($tree->left_volume ?? 0) + (float) ($tree->left_spillover ?? 0);
+        $rightVol = (float) ($tree->right_volume ?? 0) + (float) ($tree->right_spillover ?? 0);
 
         if ($leftVol <= $rightVol) {
             return 'left';
@@ -314,8 +314,8 @@ class BinaryTreePlacementService
             'total_downline' => $leftChildren + $rightChildren,
             'left_volume' => (float) $tree->left_volume,
             'right_volume' => (float) $tree->right_volume,
-            'left_carryover' => (float) $tree->carryover_left,
-            'right_carryover' => (float) $tree->carryover_right,
+            'left_carryover' => (float) $tree->left_spillover,
+            'right_carryover' => (float) $tree->right_spillover,
         ];
     }
 

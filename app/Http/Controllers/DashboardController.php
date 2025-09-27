@@ -53,7 +53,10 @@ class DashboardController extends Controller
         $binaryTreeService = new BinaryTreeService();
         $networkTree = $binaryTreeService->buildBinaryTreeForView($user, 0, 10);
 
-        return view('dashboard-network', compact('networkTree'));
+        // Get additional network statistics
+        $networkStats = $binaryTreeService->getTreeData($user, 10);
+
+        return view('network', compact('networkTree', 'networkStats'));
     }
 
 

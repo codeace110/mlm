@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('right_child_id', 20)->nullable();
             $table->decimal('left_volume', 15, 2)->default(0);
             $table->decimal('right_volume', 15, 2)->default(0);
-            $table->decimal('carryover_left', 15, 2)->default(0);
-            $table->decimal('carryover_right', 15, 2)->default(0);
+            $table->decimal('left_spillover', 15, 2)->default(0);
+            $table->decimal('right_spillover', 15, 2)->default(0);
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();

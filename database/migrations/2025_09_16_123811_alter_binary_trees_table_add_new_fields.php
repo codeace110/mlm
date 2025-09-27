@@ -24,7 +24,7 @@ return new class extends Migration
                 $table->decimal('right_spillover', 15, 2)->default(0)->after('left_spillover');
             }
             if (!Schema::hasColumn('binary_trees', 'total_left_volume')) {
-                $table->decimal('total_left_volume', 15, 2)->default(0)->after('carryover_right');
+                $table->decimal('total_left_volume', 15, 2)->default(0)->after('right_spillover');
             }
             if (!Schema::hasColumn('binary_trees', 'total_right_volume')) {
                 $table->decimal('total_right_volume', 15, 2)->default(0)->after('total_left_volume');
@@ -59,7 +59,12 @@ return new class extends Migration
     public function down()
     {
         Schema::table('binary_trees', function (Blueprint $table) {
-            $table->dropForeign(['parent_id']);
+            // Only drop foreign key if it exists
+            $foreignKeys = $this->getForeignKeys('binary_trees');
+            if (in_array('binary_trees_parent_id_foreign', $foreignKeys)) {
+                $table->dropForeign(['parent_id']);
+            }
+
             $table->dropColumn([
                 'parent_id',
                 'left_spillover',
@@ -73,5 +78,26 @@ return new class extends Migration
                 'direct_pairs_paid',
             ]);
         });
+    }
+
+    /**
+     * Get foreign keys for a table
+     */
+    private function getForeignKeys(string $table): array
+    {
+        $conn = Schema::getConnection();
+        $dbSchemaManager = $conn->getDoctrineSchemaManager();
+        $foreignKeys = [];
+
+        try {
+            $indexes = $dbSchemaManager->listTableForeignKeys($table);
+            foreach ($indexes as $index) {
+                $foreignKeys[] = $index->getName();
+            }
+        } catch (\Exception $e) {
+            // If we can't get foreign keys, return empty array
+        }
+
+        return $foreignKeys;
     }
 };

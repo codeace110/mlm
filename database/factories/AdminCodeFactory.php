@@ -28,10 +28,15 @@ class AdminCodeFactory extends Factory
     {
         return [
             'code' => Str::upper(Str::random(8)),
+            'tracker' => $this->faker->uuid(),
+            'batch_id' => $this->faker->uuid(),
             'status' => $this->faker->randomElement(['issued', 'unused', 'used']),
-            'distributor_id' => User::factory(),
+            'issued_to_user_id' => User::factory(),
+            'issued_by_admin_id' => User::factory(),
+            'issued_at' => $this->faker->optional(0.7)->dateTime(),
             'used_by_user_id' => null,
             'used_at' => null,
+            'notes' => $this->faker->optional(0.3)->sentence(),
         ];
     }
 
@@ -42,7 +47,8 @@ class AdminCodeFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'issued',
-            'distributor_id' => null,
+            'issued_to_user_id' => null,
+            'issued_at' => now(),
         ]);
     }
 

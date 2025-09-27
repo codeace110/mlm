@@ -46,8 +46,8 @@ class DatabaseSeeder extends Seeder
             'total_right_volume' => 0,
             'left_consumed' => 0,
             'right_consumed' => 0,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
         ]);
 
         // Create bonus settings
@@ -167,8 +167,8 @@ class DatabaseSeeder extends Seeder
             'total_right_volume' => 0,
             'left_consumed' => 0,
             'right_consumed' => 0,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
         ]);
 
         // Assign one admin code to the distributor

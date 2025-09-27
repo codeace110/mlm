@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
-use App\Models\ReferralCode;
-use App\Services\ReferralCodeService;
+use App\Models\AdminCode;
+use App\Services\EnhancedReferralCodeService;
 
 class ReferralCodeTest extends TestCase
 {
@@ -15,14 +15,14 @@ class ReferralCodeTest extends TestCase
     public function test_generate_referral_codes()
     {
         $admin = User::factory()->create();
-        $service = new ReferralCodeService();
+        $service = new EnhancedReferralCodeService();
 
-        $codes = $service->generateCodes($admin, 5);
+        $codes = $service->generateBatch($admin, 5);
 
         $this->assertCount(5, $codes);
         foreach ($codes as $code) {
-            $this->assertEquals('available', $code->status);
-            $this->assertEquals($admin->id, $code->generated_by);
+            $this->assertEquals('available', AdminCode::where('code', $code)->first()->status);
+            $this->assertEquals($admin->id, AdminCode::where('code', $code)->first()->generated_by);
         }
     }
 
@@ -30,10 +30,10 @@ class ReferralCodeTest extends TestCase
     {
         $admin = User::factory()->create();
         $distributor = User::factory()->create();
-        $service = new ReferralCodeService();
+        $service = new EnhancedReferralCodeService();
 
-        $codes = $service->generateCodes($admin, 1);
-        $code = $codes[0];
+        $codes = $service->generateBatch($admin, 1);
+        $code = AdminCode::where('code', $codes[0])->first();
 
         $service->assignCodeToDistributor($code, $distributor);
 
@@ -47,10 +47,10 @@ class ReferralCodeTest extends TestCase
         $admin = User::factory()->create();
         $distributor = User::factory()->create();
         $newUser = User::factory()->create();
-        $service = new ReferralCodeService();
+        $service = new EnhancedReferralCodeService();
 
-        $codes = $service->generateCodes($admin, 1);
-        $code = $codes[0];
+        $codes = $service->generateBatch($admin, 1);
+        $code = AdminCode::where('code', $codes[0])->first();
         $service->assignCodeToDistributor($code, $distributor);
 
         $result = $service->validateAndUseCode($code->code, $newUser);
@@ -63,8 +63,8 @@ class ReferralCodeTest extends TestCase
 
     public function test_invalid_code_validation()
     {
-        $service = new ReferralCodeService();
-        $result = $service->validateAndUseCode('INVALID', null);
-        $this->assertFalse($result);
+        $service = new EnhancedReferralCodeService();
+        $result = $service->validateAndUseCode('INVALID', User::factory()->create());
+        $this->assertNull($result);
     }
 }

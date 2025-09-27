@@ -13,14 +13,14 @@ class Reward extends Model
         'user_id',
         'reward_type',
         'amount',
-        'carryover_left',
-        'carryover_right',
+        'left_spillover',
+        'right_spillover',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'carryover_left' => 'decimal:2',
-        'carryover_right' => 'decimal:2',
+        'left_spillover' => 'decimal:2',
+        'right_spillover' => 'decimal:2',
     ];
 
     public function user()

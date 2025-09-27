@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('admin_codes', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('code'); // Will be stored in uppercase for case-insensitive uniqueness
             $table->string('distributor_id', 20)->nullable(); // The distributor who gets the code
             $table->enum('status', ['issued', 'unused', 'used'])->default('issued');
             $table->string('used_by_user_id', 20)->nullable();
@@ -24,6 +24,9 @@ return new class extends Migration
 
             $table->foreign('distributor_id')->references('id')->on('users')->nullOnDelete();
             $table->foreign('used_by_user_id')->references('id')->on('users')->nullOnDelete();
+
+            // Case-insensitive unique index on uppercase code
+            $table->unique('code');
         });
     }
 

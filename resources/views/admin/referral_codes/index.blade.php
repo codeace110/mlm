@@ -166,10 +166,18 @@
                                         </span>
                                     </td>
                                     <td>
-                                        {{ $code->usedBy ? $code->usedBy->name : 'Not Used' }}
+                                        @if($code->used_by)
+                                            {{ \App\Models\User::find($code->used_by)->name ?? 'User Not Found' }}
+                                        @else
+                                            Not Used
+                                        @endif
                                     </td>
                                     <td>
-                                        {{ $code->assignedTo ? $code->assignedTo->name : 'N/A' }}
+                                        @if($code->assigned_to)
+                                            {{ \App\Models\User::find($code->assigned_to)->name ?? 'User Not Found' }}
+                                        @else
+                                            N/A
+                                        @endif
                                     </td>
                                     <td>
                                         {{ $code->batch_id ? '#' . $code->batch_id : 'N/A' }}

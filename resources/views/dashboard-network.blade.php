@@ -445,14 +445,14 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
             ctx.fillStyle = '#2196F3'; // Blue for current user
         } else if (depth === 1) {
             // Direct referrals: check for carryover
-            if ((node.carryover_left && node.carryover_left > 0) || (node.carryover_right && node.carryover_right > 0)) {
+            if ((node.left_spillover && node.left_spillover > 0) || (node.right_spillover && node.right_spillover > 0)) {
                 ctx.fillStyle = '#FF6B35'; // Orange-red for direct with carryover
             } else {
                 ctx.fillStyle = '#FFD700'; // Yellow for direct without carryover
             }
         } else {
             // Spillover nodes: check for carryover
-            if ((node.carryover_left && node.carryover_left > 0) || (node.carryover_right && node.carryover_right > 0)) {
+            if ((node.left_spillover && node.left_spillover > 0) || (node.right_spillover && node.right_spillover > 0)) {
                 ctx.fillStyle = '#8B4513'; // Brown for spillover with carryover
             } else {
                 ctx.fillStyle = '#4CAF50'; // Green for spillover without carryover
@@ -475,10 +475,10 @@ function drawNode(node, x, y, depth, maxDepth, ctx, nodeRadius, vSpacing, canvas
         ctx.fillText('L:' + node.left_volume + ' R:' + node.right_volume, x, y + nodeRadius + 28);
 
         // Display carryover information
-        if (node.carryover_left || node.carryover_right) {
+        if (node.left_spillover || node.right_spillover) {
             ctx.fillStyle = '#999';
             ctx.font = '8px Arial';
-            ctx.fillText('Carry: L:' + (node.carryover_left || 0) + ' R:' + (node.carryover_right || 0), x, y + nodeRadius + 40);
+            ctx.fillText('Carry: L:' + (node.left_spillover || 0) + ' R:' + (node.right_spillover || 0), x, y + nodeRadius + 40);
         }
     } else {
         // Empty placeholder node
@@ -555,8 +555,8 @@ function showUserDetails(node) {
     document.getElementById('userEmail').textContent = node.email || 'N/A';
     document.getElementById('leftVolume').textContent = node.left_volume || 0;
     document.getElementById('rightVolume').textContent = node.right_volume || 0;
-    document.getElementById('carryoverLeft').textContent = node.carryover_left || 0;
-    document.getElementById('carryoverRight').textContent = node.carryover_right || 0;
+    document.getElementById('carryoverLeft').textContent = node.left_spillover || 0;
+    document.getElementById('carryoverRight').textContent = node.right_spillover || 0;
     document.getElementById('joinDate').textContent = node.created_at ? new Date(node.created_at).toLocaleDateString() : 'N/A';
     document.getElementById('lastActive').textContent = node.updated_at ? new Date(node.updated_at).toLocaleDateString() : 'N/A';
 

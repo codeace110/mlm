@@ -32,7 +32,7 @@ class MlmDashboardService
                 'pending_bonuses' => Bonus::where('status', 'pending')->sum('amount'),
                 'paid_bonuses' => Bonus::where('status', 'paid')->sum('amount'),
                 'total_network_volume' => BinaryTree::sum('total_left_volume') + BinaryTree::sum('total_right_volume'),
-                'total_carryover_volume' => BinaryTree::sum('carryover_left') + BinaryTree::sum('carryover_right'),
+                'total_carryover_volume' => BinaryTree::sum('left_spillover') + BinaryTree::sum('right_spillover'),
                 'users_by_balancing_mode' => $this->getUsersByBalancingMode(),
                 'recent_registrations' => $this->getRecentRegistrations(10),
                 'top_earners' => $this->getTopEarners(10),
@@ -101,8 +101,8 @@ class MlmDashboardService
             return [
                 'left_volume' => 0,
                 'right_volume' => 0,
-                'carryover_left' => 0,
-                'carryover_right' => 0,
+                'left_spillover' => 0,
+                'right_spillover' => 0,
                 'total_left_volume' => 0,
                 'total_right_volume' => 0,
                 'left_consumed' => 0,
@@ -113,8 +113,8 @@ class MlmDashboardService
         return [
             'left_volume' => (float) $tree->left_volume,
             'right_volume' => (float) $tree->right_volume,
-            'carryover_left' => (float) $tree->carryover_left,
-            'carryover_right' => (float) $tree->carryover_right,
+            'left_spillover' => (float) $tree->left_spillover,
+            'right_spillover' => (float) $tree->right_spillover,
             'total_left_volume' => (float) $tree->total_left_volume,
             'total_right_volume' => (float) $tree->total_right_volume,
             'left_consumed' => (float) $tree->left_consumed,
@@ -340,8 +340,8 @@ class MlmDashboardService
             'level' => $currentLevel + 1,
             'left_volume' => $tree ? (float) $tree->left_volume : 0,
             'right_volume' => $tree ? (float) $tree->right_volume : 0,
-            'carryover_left' => $tree ? (float) $tree->carryover_left : 0,
-            'carryover_right' => $tree ? (float) $tree->carryover_right : 0,
+            'left_spillover' => $tree ? (float) $tree->left_spillover : 0,
+            'right_spillover' => $tree ? (float) $tree->right_spillover : 0,
             'children' => [],
         ];
 

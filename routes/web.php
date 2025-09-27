@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\GenealogyController;
 use App\Http\Controllers\Admin\AdminCodeController;
 use App\Http\Controllers\Admin\ReferralCodeController;
+use App\Http\Controllers\GenealogyController as UserGenealogyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +52,10 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 
     // Referrals and Network
     Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
+    Route::get('/genealogy/{user}', [UserGenealogyController::class, 'show'])->name('genealogy.show');
+    Route::get('/genealogy/{user}/network-data', [UserGenealogyController::class, 'networkData'])->name('genealogy.network-data');
+    Route::get('/genealogy/{user}/stats', [UserGenealogyController::class, 'userStats'])->name('genealogy.user-stats');
+    Route::get('/genealogy/{user}/export', [UserGenealogyController::class, 'export'])->name('genealogy.export');
 
     // Earnings
     Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
@@ -243,8 +248,13 @@ Route::middleware(['auth', 'is_admin'])
         Route::get('/bonus-settings', [BonusSettingsController::class, 'index'])->name('bonus_settings.index');
         Route::put('/bonus-settings', [BonusSettingsController::class, 'update'])->name('bonus_settings.update');
         Route::resource('admin_codes', AdminCodeController::class);
+        Route::get('/admin_codes/create', [AdminCodeController::class, 'create'])->name('admin_codes.create');
         Route::post('/admin_codes/generate', [AdminCodeController::class, 'generate'])->name('admin_codes.generate');
         Route::post('/admin_codes/{code}/assign', [AdminCodeController::class, 'assign'])->name('admin_codes.assign');
+        Route::post('/admin_codes/{code}/issue', [AdminCodeController::class, 'issue'])->name('admin_codes.issue');
+        Route::post('/admin_codes/{code}/revoke', [AdminCodeController::class, 'revoke'])->name('admin_codes.revoke');
+        Route::get('/admin_codes/download', [AdminCodeController::class, 'download'])->name('admin_codes.download');
+        Route::get('/admin_codes/batches', [AdminCodeController::class, 'batches'])->name('admin_codes.batches');
         Route::resource('referral_codes', ReferralCodeController::class);
         Route::post('/referral_codes/generate', [ReferralCodeController::class, 'generate'])->name('referral_codes.generate');
         Route::post('/referral_codes/{referral_code}/assign', [ReferralCodeController::class, 'assign'])->name('referral_codes.assign');

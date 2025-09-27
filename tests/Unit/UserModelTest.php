@@ -24,6 +24,7 @@ class UserModelTest extends TestCase
             'email',
             'password',
             'referral_code',
+            'registration_code',
             'sponsor_id',
             'placement_side',
             'is_admin',

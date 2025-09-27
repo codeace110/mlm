@@ -40,19 +40,19 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-                <!-- Referral Code (required) -->
-        <div class="mt-4">
-            <x-input-label for="referral_code" :value="__('Referral Code')" />
+       <!-- Registration Code (required) -->
+       <div class="mt-4">
+           <x-input-label for="registration_code" :value="__('Registration Code')" />
 
-            <x-text-input id="referral_code" class="block mt-1 w-full"
-                            type="text"
-                            name="referral_code"
-                            :value="old('referral_code')"
-                            required
-                            autocomplete="referral_code" />
+           <x-text-input id="registration_code" class="block mt-1 w-full"
+                           type="text"
+                           name="registration_code"
+                           :value="old('registration_code')"
+                           required
+                           autocomplete="registration_code" />
 
-            <x-input-error :messages="$errors->get('referral_code')" class="mt-2" />
-        </div>
+           <x-input-error :messages="$errors->get('registration_code')" class="mt-2" />
+       </div>
 
         <!-- Preferred Side (optional) -->
         <div class="mt-4">

@@ -126,8 +126,8 @@ class DashboardNetworkTest extends TestCase
         // effective_right = 2 - 2 = 0 (consumed 2 for level 1)
         $this->assertEquals(3, $networkTree['left_volume']); // total
         $this->assertEquals(2, $networkTree['right_volume']); // total (direct2 + spillover3)
-        $this->assertEquals(1, $networkTree['carryover_left']); // effective = 3-2
-        $this->assertEquals(0, $networkTree['carryover_right']); // effective = 2-2
+        $this->assertEquals(1, $networkTree['left_spillover']); // effective = 3-2
+        $this->assertEquals(0, $networkTree['right_spillover']); // effective = 2-2
     }
 
     public function test_network_view_with_complex_spillover_and_multiple_levels()
@@ -195,7 +195,7 @@ class DashboardNetworkTest extends TestCase
 
         $this->assertEquals(10, $networkTree['left_volume']);
         $this->assertEquals(10, $networkTree['right_volume']);
-        $this->assertEquals($expectedEffectiveLeft, $networkTree['carryover_left']);
-        $this->assertEquals($expectedEffectiveRight, $networkTree['carryover_right']);
+        $this->assertEquals($expectedEffectiveLeft, $networkTree['left_spillover']);
+        $this->assertEquals($expectedEffectiveRight, $networkTree['right_spillover']);
     }
 }

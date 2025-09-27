@@ -33,8 +33,8 @@ class BinaryTreeServiceTest extends TestCase
         $this->assertEquals(1, $tree['level']);
         $this->assertEquals(0, $tree['left_volume']);
         $this->assertEquals(0, $tree['right_volume']);
-        $this->assertEquals(0, $tree['carryover_left']);
-        $this->assertEquals(0, $tree['carryover_right']);
+        $this->assertEquals(0, $tree['left_spillover']);
+        $this->assertEquals(0, $tree['right_spillover']);
         $this->assertCount(2, $tree['children']);
         $this->assertNull($tree['children'][0]);
         $this->assertNull($tree['children'][1]);
@@ -60,8 +60,8 @@ class BinaryTreeServiceTest extends TestCase
 
         $this->assertEquals(5, $tree['left_volume']);
         $this->assertEquals(3, $tree['right_volume']);
-        $this->assertEquals(3, $tree['carryover_left']); // 5 - 2
-        $this->assertEquals(2, $tree['carryover_right']); // 3 - 1
+        $this->assertEquals(3, $tree['left_spillover']); // 5 - 2
+        $this->assertEquals(2, $tree['right_spillover']); // 3 - 1
     }
 
     /** @test */
@@ -202,8 +202,8 @@ class BinaryTreeServiceTest extends TestCase
         $this->assertEquals('Root', $tree['name']);
         $this->assertEquals(3, $tree['left_volume']);
         $this->assertEquals(2, $tree['right_volume']);
-        $this->assertEquals(2, $tree['carryover_left']); // 3 - 1
-        $this->assertEquals(2, $tree['carryover_right']); // 2 - 0
+        $this->assertEquals(2, $tree['left_spillover']); // 3 - 1
+        $this->assertEquals(2, $tree['right_spillover']); // 2 - 0
 
         // Verify left child (Left1)
         $leftChild = $tree['children'][0];

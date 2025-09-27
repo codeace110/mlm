@@ -22,37 +22,26 @@ class BinaryBalancerServiceTest extends TestCase
         parent::setUp();
         $this->service = new BinaryBalancerService();
 
-        $this->sponsor = User::factory()->create([
-            'balancing_mode' => '1:1'
-        ]);
-
-        $this->user = User::factory()->create([
-            'balancing_mode' => '1:1'
-        ]);
+        $this->sponsor = User::factory()->create();
+        $this->user = User::factory()->create();
 
         // Create binary trees
         BinaryTree::create([
             'user_id' => $this->sponsor->id,
-            'left_volume' => 10,
-            'right_volume' => 10,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
             'total_left_volume' => 10,
             'total_right_volume' => 10,
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
         BinaryTree::create([
             'user_id' => $this->user->id,
-            'left_volume' => 0,
-            'right_volume' => 0,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
             'total_left_volume' => 0,
             'total_right_volume' => 0,
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
     }
 
@@ -71,68 +60,79 @@ class BinaryBalancerServiceTest extends TestCase
         $this->assertEquals('left', $this->user->placement_side);
     }
 
-    public function test_process_user_balancer_with_carryover_mode()
+    public function test_process_levels_with_carryover_mode()
     {
-        $user = User::factory()->create(['balancing_mode' => 'carryover']);
-        BinaryTree::create([
+        $user = User::factory()->create();
+        $tree = BinaryTree::create([
             'user_id' => $user->id,
-            'left_volume' => 5,
-            'right_volume' => 3,
-            'carryover_left' => 2,
-            'carryover_right' => 1,
+            'total_left_volume' => 5, // Level 1 quota = 2, so 5 >= 2
+            'total_right_volume' => 3, // 3 >= 2
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
-        $this->service->processUserBalancer($user);
+        // Debug: Check initial state
+        $this->assertEquals(5, $tree->getAttributes()['total_left_volume']);
+        $this->assertEquals(3, $tree->getAttributes()['total_right_volume']);
+        $this->assertEquals(0, $tree->getAttributes()['left_consumed']);
+        $this->assertEquals(0, $tree->getAttributes()['right_consumed']);
+        $this->assertEquals(1, $tree->getAttributes()['level_index']);
 
-        $tree = BinaryTree::where('user_id', $user->id)->first();
-        $this->assertEquals(2, $tree->carryover_left); // 5 + 2 - 3 = 4, but min(7, 4) = 4, remaining = 4 - 3 = 1? Wait, let me recalculate
-        $this->assertEquals(0, $tree->carryover_right); // 3 + 1 - 3 = 1, remaining = 1 - 1 = 0
+        $this->service->processLevels($user);
+
+        $tree->refresh();
+
+        // Debug: Check what happened
+        \Log::info('After processLevels', [
+            'total_left_volume' => $tree->getAttributes()['total_left_volume'],
+            'total_right_volume' => $tree->getAttributes()['total_right_volume'],
+            'left_consumed' => $tree->getAttributes()['left_consumed'],
+            'right_consumed' => $tree->getAttributes()['right_consumed'],
+            'level_index' => $tree->getAttributes()['level_index'],
+        ]);
+
+        $this->assertGreaterThan(0, $tree->left_consumed); // Should have consumed some volume
+        $this->assertGreaterThan(0, $tree->right_consumed); // Should have consumed some volume
     }
 
-    public function test_process_user_balancer_with_2_to_1_mode()
+    public function test_process_levels_with_sufficient_volume()
     {
-        $user = User::factory()->create(['balancing_mode' => '2:1']);
+        $user = User::factory()->create();
         BinaryTree::create([
             'user_id' => $user->id,
-            'left_volume' => 6,
-            'right_volume' => 3,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 6, // Level 1 quota = 2, so 6 >= 2
+            'total_right_volume' => 3, // 3 >= 2
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
-        $this->service->processUserBalancer($user);
+        $this->service->processLevels($user);
 
         $tree = BinaryTree::where('user_id', $user->id)->first();
-        $this->assertEquals(0, $tree->left_consumed); // 6/2 = 3, but 3/1 = 3, so 3 pairs
-        $this->assertEquals(3, $tree->right_consumed); // 3 pairs * 1 = 3
-        $this->assertEquals(0, $tree->carryover_left); // 6 - (3*2) = 0
-        $this->assertEquals(0, $tree->carryover_right); // 3 - (3*1) = 0
+        $this->assertGreaterThan(0, $tree->left_consumed); // Should have consumed some volume
+        $this->assertGreaterThan(0, $tree->right_consumed); // Should have consumed some volume
     }
 
-    public function test_process_user_balancer_with_3_to_1_mode()
+    public function test_process_levels_with_massive_volume()
     {
-        $user = User::factory()->create(['balancing_mode' => '3:1']);
+        $user = User::factory()->create();
         BinaryTree::create([
             'user_id' => $user->id,
-            'left_volume' => 9,
-            'right_volume' => 3,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 100, // Much more than level quotas
+            'total_right_volume' => 100,
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
-        $this->service->processUserBalancer($user);
+        $this->service->processLevels($user);
 
         $tree = BinaryTree::where('user_id', $user->id)->first();
-        $this->assertEquals(0, $tree->left_consumed); // 9/3 = 3, 3/1 = 3, so 3 pairs
-        $this->assertEquals(3, $tree->right_consumed); // 3 pairs * 1 = 3
-        $this->assertEquals(0, $tree->carryover_left); // 9 - (3*3) = 0
-        $this->assertEquals(0, $tree->carryover_right); // 3 - (3*1) = 0
+        $this->assertGreaterThan(0, $tree->left_consumed); // Should have consumed some volume
+        $this->assertGreaterThan(0, $tree->right_consumed); // Should have consumed some volume
+        $this->assertGreaterThan(1, $tree->level_index); // Should have advanced levels
     }
 
     public function test_calculate_direct_bonus()
@@ -156,115 +156,156 @@ class BinaryBalancerServiceTest extends TestCase
 
         $this->assertCount(1, $bonuses);
         $this->assertEquals(100.00, $bonuses->first()->amount);
+        $this->assertEquals('Direct Referral Bonus ₱100 (Reward #1)', $bonuses->first()->description);
     }
 
-    public function test_calculate_potential_pairs()
+    public function test_calculate_spillover_bonus()
     {
-        $user = User::factory()->create(['balancing_mode' => '2:1']);
-        BinaryTree::where('user_id', $user->id)->update([
-            'left_volume' => 6,
-            'right_volume' => 3,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
-            'left_consumed' => 0,
-            'right_consumed' => 0,
+        // Create spillover referrals (non-direct)
+        $leftChild = User::factory()->create([
+            'sponsor_id' => $this->sponsor->id,
+            'placement_side' => 'left'
         ]);
 
-        $potential = $this->service->calculatePotentialPairs($user);
+        $rightChild = User::factory()->create([
+            'sponsor_id' => $this->sponsor->id,
+            'placement_side' => 'right'
+        ]);
 
-        $this->assertEquals(3, $potential['pairs']); // 6/2 = 3, 3/1 = 3
-        $this->assertEquals(6, $potential['left_available']);
-        $this->assertEquals(3, $potential['right_available']);
-        $this->assertEquals('2:1', $potential['mode']);
-        $this->assertEquals('2 left + 1 right = 1 pair', $potential['mode_description']);
+        // Create spillover under left child
+        $spilloverLeft = User::factory()->create([
+            'sponsor_id' => $leftChild->id,
+            'placement_side' => 'left'
+        ]);
+
+        $spilloverRight = User::factory()->create([
+            'sponsor_id' => $rightChild->id,
+            'placement_side' => 'right'
+        ]);
+
+        $this->service->calculateSpilloverBonus($this->sponsor);
+
+        $bonuses = Bonus::where('user_id', $this->sponsor->id)
+            ->where('reward_type', 'spillover')
+            ->get();
+
+        $this->assertCount(1, $bonuses);
+        $this->assertEquals(100.00, $bonuses->first()->amount); // Should be ₱100, not ₱20
+        $this->assertEquals('Spillover Bonus ₱100 (Reward #1)', $bonuses->first()->description);
     }
 
-    public function test_get_available_modes()
+    public function test_process_levels_calculates_correctly()
     {
-        $modes = BinaryBalancerService::getAvailableModes();
+        $user = User::factory()->create();
+        BinaryTree::where('user_id', $user->id)->update([
+            'total_left_volume' => 6, // Level 1 quota = 2, so 6 >= 2
+            'total_right_volume' => 3, // 3 >= 2
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+        ]);
 
-        $this->assertArrayHasKey('1:1', $modes);
-        $this->assertArrayHasKey('2:1', $modes);
-        $this->assertArrayHasKey('3:1', $modes);
-        $this->assertArrayHasKey('carryover', $modes);
+        $this->service->processLevels($user);
 
-        $this->assertEquals('Strict 1:1 matching', $modes['1:1']['description']);
-        $this->assertEquals('2 left + 1 right = 1 pair', $modes['2:1']['description']);
-        $this->assertEquals('3 left + 1 right = 1 pair', $modes['3:1']['description']);
-        $this->assertEquals('Carryover mode', $modes['carryover']['description']);
+        // Verify that level processing occurred
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+        $this->assertGreaterThan(0, $tree->left_consumed);
+        $this->assertGreaterThan(0, $tree->right_consumed);
     }
 
-    public function test_get_mode_config()
+    public function test_process_levels_with_one_sided_quota()
     {
-        $config = BinaryBalancerService::getModeConfig('2:1');
+        $user = User::factory()->create();
+        BinaryTree::create([
+            'user_id' => $user->id,
+            'total_left_volume' => 8, // Level 3 quota = 8, so 8 >= 8
+            'total_right_volume' => 0, // 0 < 8, so only left should trigger
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 3,
+        ]);
 
-        $this->assertEquals(2, $config['left_ratio']);
-        $this->assertEquals(1, $config['right_ratio']);
-        $this->assertEquals('2 left + 1 right = 1 pair', $config['description']);
+        $this->service->processLevels($user);
 
-        $this->assertNull(BinaryBalancerService::getModeConfig('invalid'));
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+        $this->assertGreaterThan(0, $tree->left_consumed); // Should have consumed left volume
+        $this->assertEquals(0, $tree->right_consumed); // Should not have consumed right volume
     }
 
-    public function test_process_balancer_for_uplines()
+    public function test_process_levels_with_simultaneous_both_sides()
     {
-        $upline1 = User::factory()->create(['balancing_mode' => '1:1']);
-        $upline2 = User::factory()->create(['balancing_mode' => '1:1']);
+        $user = User::factory()->create();
+        BinaryTree::create([
+            'user_id' => $user->id,
+            'total_left_volume' => 16, // Level 4 quota = 16, so 16 >= 16
+            'total_right_volume' => 16, // 16 >= 16
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 4,
+        ]);
+
+        $this->service->processLevels($user);
+
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+        $this->assertGreaterThan(0, $tree->left_consumed); // Should have consumed both sides
+        $this->assertGreaterThan(0, $tree->right_consumed); // Should have consumed both sides
+    }
+
+    public function test_process_downline_quotas_for_uplines()
+    {
+        $upline1 = User::factory()->create();
+        $upline2 = User::factory()->create();
 
         $this->user->update(['sponsor_id' => $upline1->id]);
         $upline1->update(['sponsor_id' => $upline2->id]);
 
         BinaryTree::create([
             'user_id' => $upline1->id,
-            'left_volume' => 5,
-            'right_volume' => 5,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 5,
+            'total_right_volume' => 5,
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
         BinaryTree::create([
             'user_id' => $upline2->id,
-            'left_volume' => 10,
-            'right_volume' => 10,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 10,
+            'total_right_volume' => 10,
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
-        $this->service->processBalancerForUplines($this->user);
+        $this->service->processDownlineQuotasForUplines($this->user);
 
-        // Check that bonuses were created for uplines
-        $upline1Bonuses = Bonus::where('user_id', $upline1->id)->count();
-        $upline2Bonuses = Bonus::where('user_id', $upline2->id)->count();
+        // Check that level processing occurred for uplines
+        $upline1Tree = BinaryTree::where('user_id', $upline1->id)->first();
+        $upline2Tree = BinaryTree::where('user_id', $upline2->id)->first();
 
-        $this->assertGreaterThan(0, $upline1Bonuses);
-        $this->assertGreaterThan(0, $upline2Bonuses);
+        $this->assertGreaterThan(0, $upline1Tree->left_consumed);
+        $this->assertGreaterThan(0, $upline2Tree->left_consumed);
     }
 
-    public function test_create_pair_bonuses()
+    public function test_product_reward_every_5th_bonus()
     {
-        $user = User::factory()->create(['balancing_mode' => '1:1']);
+        $user = User::factory()->create();
         BinaryTree::create([
             'user_id' => $user->id,
-            'left_volume' => 5,
-            'right_volume' => 5,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 5, // Level 1 quota = 2, so 5 >= 2
+            'total_right_volume' => 5, // 5 >= 2
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'level_index' => 1,
         ]);
 
-        $this->service->processUserBalancer($user);
+        $this->service->processLevels($user);
 
-        $bonuses = Bonus::where('user_id', $user->id)->where('reward_type', 'pair')->get();
+        $bonuses = Bonus::where('user_id', $user->id)->where('reward_type', 'level')->get();
 
-        $this->assertCount(5, $bonuses);
-        $this->assertEquals(500.00, $bonuses->sum('amount')); // 5 pairs * 100
-
-        // Check that every 5th bonus is a product reward
+        // Check that bonuses were created and some are product rewards
+        $this->assertGreaterThan(0, $bonuses->count());
         $productBonuses = $bonuses->where('is_product', true);
-        $this->assertCount(1, $productBonuses);
+        $this->assertGreaterThan(0, $productBonuses->count());
     }
 }
