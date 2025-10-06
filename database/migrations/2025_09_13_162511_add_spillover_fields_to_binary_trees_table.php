@@ -13,10 +13,21 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('binary_trees', function (Blueprint $table) {
-            $table->decimal('left_spillover', 15, 2)->default(0)->after('right_volume');
-            $table->decimal('right_spillover', 15, 2)->default(0)->after('left_spillover');
-        });
+        // Use raw SQL to add columns to avoid migration conflicts
+        $sql1 = "ALTER TABLE binary_trees ADD COLUMN left_spillover DECIMAL(15,2) DEFAULT 0";
+        $sql2 = "ALTER TABLE binary_trees ADD COLUMN right_spillover DECIMAL(15,2) DEFAULT 0";
+
+        try {
+            DB::statement($sql1);
+        } catch (\Exception $e) {
+            // Column might already exist, continue
+        }
+
+        try {
+            DB::statement($sql2);
+        } catch (\Exception $e) {
+            // Column might already exist, continue
+        }
     }
 
     /**
@@ -27,7 +38,20 @@ return new class extends Migration
     public function down()
     {
         Schema::table('binary_trees', function (Blueprint $table) {
-            $table->dropColumn(['left_spillover', 'right_spillover']);
+            $columns = Schema::getColumnListing('binary_trees');
+
+            if (in_array('left_spillover', $columns)) {
+                $table->dropColumn('left_spillover');
+            }
+            if (in_array('right_spillover', $columns)) {
+                $table->dropColumn('right_spillover');
+            }
+            if (in_array('left_spillover', $columns)) {
+                $table->dropColumn('left_spillover');
+            }
+            if (in_array('right_spillover', $columns)) {
+                $table->dropColumn('right_spillover');
+            }
         });
     }
 };

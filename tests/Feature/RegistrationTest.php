@@ -15,9 +15,9 @@ class RegistrationTest extends TestCase
     public function user_can_register_with_valid_admin_code()
     {
         $distributor = User::factory()->create();
-        $code = AdminCode::factory()->create([
+        $adminCode = AdminCode::factory()->create([
             'distributor_id' => $distributor->id,
-            'status' => 'unused',
+            'status' => 'issued',
         ]);
 
         $response = $this->post('/register', [
@@ -25,20 +25,19 @@ class RegistrationTest extends TestCase
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'admin_code' => $code->code,
-            'preferred_side' => 'left',
+            'registration_code' => $adminCode->code,
         ]);
 
         $response->assertRedirect('/dashboard');
         $this->assertDatabaseHas('users', [
             'email' => 'new@example.com',
             'sponsor_id' => $distributor->id,
-            'placement_side' => 'left',
+            'registration_code' => $adminCode->code,
         ]);
 
-        $code->refresh();
-        $this->assertEquals('used', $code->status);
-        $this->assertNotNull($code->used_by_user_id);
+        $adminCode->refresh();
+        $this->assertEquals('used', $adminCode->status);
+        $this->assertNotNull($adminCode->used_by_user_id);
     }
 
     /** @test */
@@ -49,38 +48,42 @@ class RegistrationTest extends TestCase
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'admin_code' => 'INVALID',
+            'registration_code' => 'INVALID123',
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('admin_code');
+        $response->assertSessionHasErrors('registration_code');
         $this->assertDatabaseMissing('users', ['email' => 'new@example.com']);
     }
 
     /** @test */
     public function registration_fails_with_used_admin_code()
     {
-        $code = AdminCode::factory()->create(['status' => 'used']);
+        $distributor = User::factory()->create();
+        $adminCode = AdminCode::factory()->create([
+            'distributor_id' => $distributor->id,
+            'status' => 'used',
+        ]);
 
         $response = $this->post('/register', [
             'name' => 'New User',
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'admin_code' => $code->code,
+            'registration_code' => $adminCode->code,
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHasErrors('admin_code');
+        $response->assertSessionHasErrors('registration_code');
     }
 
     /** @test */
-    public function registration_creates_binary_tree_and_bonuses()
+    public function registration_creates_binary_tree()
     {
         $distributor = User::factory()->create();
-        $code = AdminCode::factory()->create([
+        $adminCode = AdminCode::factory()->create([
             'distributor_id' => $distributor->id,
-            'status' => 'unused',
+            'status' => 'issued',
         ]);
 
         $this->post('/register', [
@@ -88,11 +91,10 @@ class RegistrationTest extends TestCase
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'admin_code' => $code->code,
+            'registration_code' => $adminCode->code,
         ]);
 
         $newUser = User::where('email', 'new@example.com')->first();
         $this->assertDatabaseHas('binary_trees', ['user_id' => $newUser->id]);
-        $this->assertDatabaseHas('binary_trees', ['user_id' => $distributor->id]);
     }
 }

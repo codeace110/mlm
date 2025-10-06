@@ -9,6 +9,8 @@ use App\Models\Withdrawal;
 use App\Models\ReferralCode;
 use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
+use App\Services\DashboardService;
+use App\Services\BinaryTreeService;
 
 class DashboardController extends Controller
 {
@@ -21,43 +23,8 @@ class DashboardController extends Controller
             return redirect()->route('onboarding');
         }
 
-        // Get user's downlines count
-        $downlinesCount = User::where('sponsor_id', $user->id)->count();
-
-        // Get user's earnings
-        $totalEarnings = Earning::where('user_id', $user->id)->sum('amount');
-        $pendingEarnings = Earning::where('user_id', $user->id)->where('status', 'pending')->sum('amount');
-
-        // Get user's withdrawals
-        $totalWithdrawals = Withdrawal::where('user_id', $user->id)->sum('amount');
-        $pendingWithdrawals = Withdrawal::where('user_id', $user->id)->where('status', 'pending')->count();
-
-        // Get user's account balance
-        $accountBalance = $user->account_balance ?? 0;
-
-        // Get recent referrals
-        $recentReferrals = User::where('sponsor_id', $user->id)
-            ->latest()
-            ->take(5)
-            ->get();
-
-        // Get recent earnings
-        $recentEarnings = Earning::where('user_id', $user->id)
-            ->latest()
-            ->take(5)
-            ->get();
-
-        // Get network statistics
-        $networkStats = $this->getNetworkStatistics($user);
-
-        // Get earnings by type
-        $earningsByType = Earning::where('user_id', $user->id)
-            ->selectRaw('type, SUM(amount) as total')
-            ->groupBy('type')
-            ->get();
-
-        // Get user's referral codes
-        $referralCodes = ReferralCode::where('assigned_to', $user->id)->get();
+        $dashboardService = new DashboardService();
+        $dashboardData = $dashboardService->getDashboardData($user);
 
         // Calculate growth percentages (simplified - in real app, compare with previous period)
         $downlineGrowthPercent = '+0%'; // Placeholder
@@ -68,182 +35,106 @@ class DashboardController extends Controller
         $salesGrowthPercent = '0%'; // Placeholder
         $salesGrowthPeriod = 'this period'; // Placeholder
 
-        return view('dashboard', compact(
-            'user',
-            'downlinesCount',
-            'totalEarnings',
-            'pendingEarnings',
-            'totalWithdrawals',
-            'pendingWithdrawals',
-            'accountBalance',
-            'recentReferrals',
-            'recentEarnings',
-            'networkStats',
-            'earningsByType',
-            'referralCodes',
-            'downlineGrowthPercent',
-            'balanceGrowthPercent',
-            'withdrawalGrowthPercent',
-            'pendingEarningsGrowthPercent',
-            'salesText',
-            'salesGrowthPercent',
-            'salesGrowthPeriod'
-        ));
+        return view('dashboard', array_merge($dashboardData, [
+            'user' => $user,
+            'downlineGrowthPercent' => $downlineGrowthPercent,
+            'balanceGrowthPercent' => $balanceGrowthPercent,
+            'withdrawalGrowthPercent' => $withdrawalGrowthPercent,
+            'pendingEarningsGrowthPercent' => $pendingEarningsGrowthPercent,
+            'salesText' => $salesText,
+            'salesGrowthPercent' => $salesGrowthPercent,
+            'salesGrowthPeriod' => $salesGrowthPeriod
+        ]));
     }
 
     public function network()
     {
         $user = Auth::user();
-        $networkTree = $this->buildBinaryTree($user, 0, 10);
+        $binaryTreeService = new BinaryTreeService();
+        $networkTree = $binaryTreeService->buildBinaryTreeForView($user, 0, 10);
 
-        return view('DashboardNetwork', compact('networkTree'));
+        // Get additional network statistics
+        $networkStats = $binaryTreeService->getTreeData($user, 10);
+
+        return view('network', compact('networkTree', 'networkStats'));
     }
 
-    private function getNetworkStatistics($user)
-    {
-        $level1 = User::where('sponsor_id', $user->id)->count();
-        $level2 = User::whereIn('sponsor_id', User::where('sponsor_id', $user->id)->pluck('id'))->count();
-        $level3 = User::whereIn('sponsor_id',
-            User::whereIn('sponsor_id', User::where('sponsor_id', $user->id)->pluck('id'))->pluck('id')
-        )->count();
-
-        return [
-            'level1' => $level1,
-            'level2' => $level2,
-            'level3' => $level3,
-            'total' => $level1 + $level2 + $level3
-        ];
-    }
-
-    private function buildBinaryTree($user, $depth = 0, $maxDepth = 3)
-    {
-        if ($depth >= $maxDepth) {
-            return null;
-        }
-
-        $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
-
-        if ($binaryTree) {
-            $total_left_volume = $binaryTree->total_left_volume;
-            $total_right_volume = $binaryTree->total_right_volume;
-            $left_consumed = $binaryTree->left_consumed;
-            $right_consumed = $binaryTree->right_consumed;
-            $left_child_id = $binaryTree->left_child_id;
-            $right_child_id = $binaryTree->right_child_id;
-        } else {
-            // For cases where BinaryTree is not created (e.g., tests), find children by sponsor_id
-            $directs = \App\Models\User::where('sponsor_id', $user->id)->orderBy('id')->get();
-            $left_child_id = $directs->count() > 0 ? $directs[0]->id : null;
-            $right_child_id = $directs->count() > 1 ? $directs[1]->id : null;
-            $total_left_volume = 0;
-            $total_right_volume = 0;
-            $left_consumed = 0;
-            $right_consumed = 0;
-        }
-
-        // Calculate effective volumes (carryover)
-        $effective_left = $total_left_volume - $left_consumed;
-        $effective_right = $total_right_volume - $right_consumed;
-
-        $node = [
-            'name' => $user->name,
-            'id' => $user->id,
-            'level' => $depth + 1,
-            'left_volume' => $total_left_volume, // Keep for backward compatibility in view
-            'right_volume' => $total_right_volume,
-            'carryover_left' => $effective_left, // Effective = carryover
-            'carryover_right' => $effective_right,
-            'profile_image' => $user->profile_image,
-            'children' => [null, null] // Initialize with null placeholders for left and right
-        ];
-
-        // Left child
-        if ($left_child_id) {
-            $leftUser = \App\Models\User::find($left_child_id);
-            if ($leftUser) {
-                $leftChild = $this->buildBinaryTree($leftUser, $depth + 1, $maxDepth);
-                if ($leftChild) {
-                    $node['children'][0] = $leftChild; // Left child at index 0
-                }
-            }
-        }
-
-        // Right child
-        if ($right_child_id) {
-            $rightUser = \App\Models\User::find($right_child_id);
-            if ($rightUser) {
-                $rightChild = $this->buildBinaryTree($rightUser, $depth + 1, $maxDepth);
-                if ($rightChild) {
-                    $node['children'][1] = $rightChild; // Right child at index 1
-                }
-            }
-        }
-
-        return $node;
-    }
 
     public function ajaxChartData()
     {
         $user = Auth::user();
+        $dashboardService = new DashboardService();
 
-        // Get earnings data for the last 12 months
-        $earningsData = [];
-        $labels = [];
-
-        for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-            $monthName = $date->format('M');
-            $labels[] = $monthName;
-
-            $earnings = Earning::where('user_id', $user->id)
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->sum('amount');
-
-            $earningsData[] = (float) $earnings;
-        }
-
-        // Get network growth data
-        $networkData = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-
-            $networkCount = User::where('sponsor_id', $user->id)
-                ->where('created_at', '<=', $date)
-                ->count();
-
-            $networkData[] = $networkCount;
-        }
+        $earningsData = $dashboardService->getEarningsChartData($user);
+        $networkData = $dashboardService->getNetworkChartData($user);
 
         return response()->json([
             'success' => true,
-            'earnings' => [
-                'labels' => $labels,
-                'data' => $earningsData
-            ],
-            'network' => [
-                'labels' => $labels,
-                'data' => $networkData
-            ]
+            'earnings' => $earningsData,
+            'network' => $networkData
         ]);
     }
 
     public function ajaxEarningsByType()
     {
         $user = Auth::user();
-
-        $earningsByType = Earning::where('user_id', $user->id)
-            ->selectRaw('type, SUM(amount) as total')
-            ->groupBy('type')
-            ->get();
-
-        $labels = $earningsByType->pluck('type')->toArray();
-        $data = $earningsByType->pluck('total')->toArray();
+        $dashboardService = new DashboardService();
+        $earningsData = $dashboardService->getEarningsByTypeData($user);
 
         return response()->json([
             'success' => true,
-            'labels' => $labels,
-            'data' => $data
+            'labels' => $earningsData['labels'],
+            'data' => $earningsData['data']
+        ]);
+    }
+
+    public function ajaxNetworkStats()
+    {
+        $user = Auth::user();
+        $binaryTreeService = new BinaryTreeService();
+        $networkTree = $binaryTreeService->buildBinaryTreeForView($user, 0, 10);
+
+        // Calculate network statistics
+        $level1Count = $networkTree['children'] ? count($networkTree['children']) : 0;
+        $level2Count = 0;
+        $level3Count = 0;
+
+        if ($networkTree['children']) {
+            $networkTree['children']->each(function($child) use (&$level2Count, &$level3Count) {
+                if ($child['children']) {
+                    $level2Count += count($child['children']);
+                    $child['children']->each(function($grandchild) use (&$level3Count) {
+                        if ($grandchild['children']) {
+                            $level3Count += count($grandchild['children']);
+                        }
+                    });
+                }
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'stats' => [
+                'level1' => $level1Count,
+                'level2' => $level2Count,
+                'level3' => $level3Count,
+                'total' => $level1Count + $level2Count + $level3Count
+            ]
+        ]);
+    }
+
+    public function ajaxBalanceStats()
+    {
+        $user = Auth::user();
+        $dashboardService = new DashboardService();
+        $dashboardData = $dashboardService->getDashboardData($user);
+
+        return response()->json([
+            'success' => true,
+            'balance' => $dashboardData['balance'],
+            'totalEarnings' => $dashboardData['totalEarnings'],
+            'pendingEarnings' => $dashboardData['pendingEarnings'],
+            'totalWithdrawals' => $dashboardData['totalWithdrawals']
         ]);
     }
 
@@ -257,77 +148,63 @@ class DashboardController extends Controller
 
         // If no notifications exist, create some sample ones for demonstration
         if ($notifications->isEmpty()) {
-            $this->createSampleNotifications($user, $notificationService);
-            $notifications = $notificationService->getUserNotifications($user->id, 15);
+            NotificationService::createSampleNotifications($user);
+            $notifications = $notificationService->getUserNotifications((int) $user->id, 15);
         }
 
-        return view('DashboardNotification', compact('notifications'));
+        return view('dashboard-notification', compact('notifications'));
     }
 
-    private function createSampleNotifications(User $user, NotificationService $notificationService)
+    public function ajaxNetworkData(Request $request)
     {
-        // Welcome notification
-        $notificationService->createNotification(
-            $user->id,
-            'success',
-            'Welcome to AKEN MLM!',
-            'Your account has been successfully created. Start building your network today!',
-            'rocket',
-            'success'
-        );
+        $user = Auth::user();
+        $period = $request->get('period', '30d'); // 7d, 30d, 90d
 
-        // Profile completion reminder
-        if (!$user->phone || !$user->address) {
-            $notificationService->createNotification(
-                $user->id,
-                'info',
-                'Complete Your Profile',
-                'Please complete your profile information to unlock all features.',
-                'user-edit',
-                'info'
-            );
-        }
+        $dashboardService = new DashboardService();
+        $networkData = $dashboardService->getNetworkDataForPeriod($user, $period);
 
-        // Referral code notification
-        $notificationService->createNotification(
-            $user->id,
-            'info',
-            'Your Referral Link is Ready',
-            'Share your referral link to start earning commissions: ' . url('/register?ref=' . $user->referral_code),
-            'link',
-            'primary'
-        );
-
-        // Network building tips
-        $downlinesCount = User::where('sponsor_id', $user->id)->count();
-        if ($downlinesCount == 0) {
-            $notificationService->createNotification(
-                $user->id,
-                'info',
-                'Start Building Your Network',
-                'Add your first referral to begin earning from the binary compensation plan.',
-                'users',
-                'primary'
-            );
-        }
-
-        // Recent earnings notification (if any)
-        $recentEarnings = Earning::where('user_id', $user->id)->latest()->first();
-        if ($recentEarnings) {
-            $notificationService->notifyEarnings($user, $recentEarnings);
-        }
-
-        // Pending withdrawals notification
-        $pendingWithdrawals = Withdrawal::where('user_id', $user->id)->where('status', 'pending')->count();
-        if ($pendingWithdrawals > 0) {
-            $notificationService->createNotification(
-                $user->id,
-                'info',
-                'Withdrawal Pending Review',
-                "You have {$pendingWithdrawals} withdrawal request(s) currently being reviewed.",
-                'clock',
-                'warning'
-            );
-        }
+        return response()->json([
+            'success' => true,
+            'networkData' => $networkData
+        ]);
     }
+
+    public function ajaxSalesData(Request $request)
+    {
+        $user = Auth::user();
+        $period = $request->get('period', 'monthly'); // weekly, monthly, yearly
+
+        $dashboardService = new DashboardService();
+        $salesData = $dashboardService->getSalesDataForPeriod($user, $period);
+
+        return response()->json([
+            'success' => true,
+            'salesData' => $salesData
+        ]);
+    }
+
+    public function ajaxEarningsBreakdown()
+    {
+        $user = Auth::user();
+        $dashboardService = new DashboardService();
+        $earningsBreakdown = $dashboardService->getEarningsBreakdownData($user);
+
+        return response()->json([
+            'success' => true,
+            'earningsBreakdown' => $earningsBreakdown
+        ]);
+    }
+
+    public function ajaxBalanceData()
+    {
+        $user = Auth::user();
+        $dashboardService = new DashboardService();
+        $balanceData = $dashboardService->getBalanceTrendData($user);
+
+        return response()->json([
+            'success' => true,
+            'balanceData' => $balanceData
+        ]);
+    }
+
 }

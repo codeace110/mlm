@@ -38,6 +38,9 @@
                     <a href="{{ route('admin.withdrawals.index') }}" class="nav-link text-white {{ request()->routeIs('admin.withdrawals.*') ? 'active-link' : '' }}">Withdrawals</a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('admin.referral_codes.index') }}" class="nav-link text-white {{ request()->routeIs('admin.referral_codes.*') ? 'active-link' : '' }}">Referral Codes</a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('admin.genealogy.index') }}" class="nav-link text-white {{ request()->routeIs('admin.genealogy.*') ? 'active-link' : '' }}">Genealogy</a>
                 </li>
             </ul>

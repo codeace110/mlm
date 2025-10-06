@@ -36,7 +36,8 @@ class EnsureProfileComplete
             'logout',
             'verification.notice',
             'verification.verify',
-            'verification.send'
+            'verification.send',
+            'withdrawals.store'
         ];
 
         if (in_array($request->route()->getName(), $excludedRoutes)) {

@@ -7,11 +7,11 @@
     <div class="container">
       <h1 class="display-3 fw-bold mb-3">Transform Your Financial Destiny</h1>
       <p class="lead mb-4 opacity-75">Join thousands of Filipinos who've built sustainable wealth and achieved true financial freedom through our proven system.</p>
-      <a href="#" class="btn btn-lg me-3 shadow rounded-pill fw-semibold" 
+      <a href="{{ route('register') }}" class="btn btn-lg me-3 shadow rounded-pill fw-semibold"
          style="background:#FFC107; color:#000;">
          <i class="bi bi-person-plus"></i> Get Started
       </a>
-      <a href="#features" class="btn btn-lg shadow rounded-pill fw-semibold" 
+      <a href="#features" class="btn btn-lg shadow rounded-pill fw-semibold"
          style="border:2px solid #00C9A7; color:#00C9A7;">
          <i class="bi bi-info-circle"></i> Learn More
       </a>
@@ -26,7 +26,7 @@
         @forelse ($products as $product)
         <div class="col-md-4">
           <div class="card border-0 shadow-lg rounded-4 h-100">
-            <img src="{{ $product->image ? asset($product->image) : asset('assets/product-placeholder.jpg') }}" class="card-img-top rounded-top-4" alt="{{ $product->name }}">
+            <img src="{{ $product->image ? asset($product->image) : asset('assets/product-placeholder.jpg') }}" class="card-img-top rounded-top-4" alt="{{ $product->name }}" loading="lazy">
             <div class="card-body">
               <h5 class="fw-semibold">{{ $product->name }}</h5>
               <p class="text-muted">{{ Str::limit($product->description, 50) }}</p>
@@ -72,7 +72,7 @@
         @forelse ($testimonials as $testimonial)
         <div class="col-md-4">
           <div class="card shadow-lg border-0 rounded-4 p-4 text-center h-100">
-            <img src="{{ $testimonial['image'] ?? asset('assets/user-placeholder.jpg') }}" class="rounded-circle mb-3" width="70" height="70" alt="{{ $testimonial['name'] }}">
+            <img src="{{ $testimonial['image'] ?? asset('assets/user-placeholder.jpg') }}" class="rounded-circle mb-3 img-fluid" alt="{{ $testimonial['name'] }}" loading="lazy">
             <p class="fst-italic">"{{ $testimonial['message'] }}"</p>
             <h6 class="fw-semibold">{{ $testimonial['name'] }}</h6>
           </div>

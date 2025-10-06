@@ -26,6 +26,12 @@ return new class extends Migration
             // Left / Right placement
             $table->string('placement_side', 5)->nullable();
 
+            // Commission level
+            $table->integer('level')->default(1);
+
+            // Commission amount
+            $table->decimal('commission', 10, 2)->default(0);
+
             // Admin decision
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
 

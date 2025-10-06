@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Validator;
 
 class WithdrawalsController extends Controller
 {
@@ -22,14 +23,19 @@ class WithdrawalsController extends Controller
 
         $user = Auth::user();
 
+        // Validate user profile
+        $validator = Validator::make($user->toArray(), [
+            'phone' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
         // Check balance
         if ($user->account_balance < $request->amount) {
             return redirect()->back()->with('error', 'Insufficient balance.');
-        }
-
-        // Check required profile data
-        if (empty($user->phone) || empty($user->address)) {
-            return redirect()->back()->with('error', 'Please complete your profile (phone and address) before requesting a withdrawal.');
         }
 
         // Create withdrawal request (balance will be deducted on approval)
@@ -160,7 +166,7 @@ class WithdrawalsController extends Controller
             ]
         ];
 
-        return view('DashboardPayout', compact('withdrawals', 'stats', 'user', 'paymentMethods'));
+        return view('dashboard-payout', compact('withdrawals', 'stats', 'user', 'paymentMethods'));
     }
 
     private function getWithdrawalStats($user)

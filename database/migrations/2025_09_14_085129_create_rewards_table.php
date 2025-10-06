@@ -19,8 +19,8 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->enum('reward_type', ['direct', 'quota']);
             $table->decimal('amount', 10, 2);
-            $table->decimal('carryover_left', 10, 2)->default(0);
-            $table->decimal('carryover_right', 10, 2)->default(0);
+            $table->decimal('left_spillover', 10, 2)->default(0);
+            $table->decimal('right_spillover', 10, 2)->default(0);
             $table->timestamps();
         });
     }

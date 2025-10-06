@@ -23,20 +23,32 @@
                                 <div class="card-body">
                                     <dl class="row">
                                         <dt class="col-sm-4">Code:</dt>
-                                        <dd class="col-sm-8">{{ $code->code }}</dd>
+                                        <dd class="col-sm-8">
+                                            <span class="font-weight-bold text-primary h5">{{ $code->code }}</span>
+                                            @if($code->batch_name)
+                                                <br><small class="text-muted">Batch: {{ $code->batch_name }}</small>
+                                            @endif
+                                        </dd>
 
                                         <dt class="col-sm-4">Status:</dt>
                                         <dd class="col-sm-8">
-                                            <span class="badge badge-sm bg-gradient-{{ $code->status == 'issued' ? 'success' : ($code->status == 'unused' ? 'warning' : 'secondary') }}">
+                                            <span class="badge badge-lg bg-gradient-{{ $code->status == 'issued' ? 'success' : ($code->status == 'unused' ? 'warning' : 'secondary') }}">
                                                 {{ ucfirst($code->status) }}
                                             </span>
                                         </dd>
 
                                         <dt class="col-sm-4">Created:</dt>
-                                        <dd class="col-sm-8">{{ $code->created_at->format('Y-m-d H:i:s') }}</dd>
+                                        <dd class="col-sm-8">{{ $code->created_at->format('M d, Y H:i:s') }}</dd>
 
                                         <dt class="col-sm-4">Updated:</dt>
-                                        <dd class="col-sm-8">{{ $code->updated_at->format('Y-m-d H:i:s') }}</dd>
+                                        <dd class="col-sm-8">{{ $code->updated_at->format('M d, Y H:i:s') }}</dd>
+
+                                        @if($code->batch_id)
+                                        <dt class="col-sm-4">Batch ID:</dt>
+                                        <dd class="col-sm-8">
+                                            <code>{{ $code->batch_id }}</code>
+                                        </dd>
+                                        @endif
                                     </dl>
                                 </div>
                             </div>

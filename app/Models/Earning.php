@@ -15,6 +15,7 @@ class Earning extends Model
         'type',
         'description',
         'status',
+        'created_at',
     ];
 
     protected $casts = [

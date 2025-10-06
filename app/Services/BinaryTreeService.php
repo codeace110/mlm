@@ -14,6 +14,31 @@ class BinaryTreeService
     protected $pairBonusAmount = 100; // ₱100 per matched pair
     protected $productRewardInterval = 5; // Every 5th pair gives product instead of cash
 
+    public function __construct()
+    {
+        $this->loadBonusSettings();
+    }
+
+    /**
+     * Load bonus settings from database
+     */
+    protected function loadBonusSettings()
+    {
+        $bonusSettings = \App\Models\BonusSettings::first();
+        $activeRule = \App\Models\BonusRule::where('is_active', true)->first();
+
+        if ($bonusSettings) {
+            $this->directBonusAmount = $bonusSettings->direct_bonus_percent > 0
+                ? $bonusSettings->package_value * ($bonusSettings->direct_bonus_percent / 100)
+                : $this->directBonusAmount;
+            $this->pairBonusAmount = $bonusSettings->pair_bonus_amount ?? $this->pairBonusAmount;
+        }
+
+        if ($activeRule) {
+            $this->productRewardInterval = $activeRule->percentage > 0 ? $activeRule->percentage : $this->productRewardInterval;
+        }
+    }
+
     /**
      * Place a new user in the binary tree under the sponsor with spillover handling.
      */
@@ -30,29 +55,25 @@ class BinaryTreeService
         // Try to place directly under sponsor
         if ($preferredSide === 'left' && !$sponsorTree->left_child_id) {
             $sponsorTree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $sponsorTree->left_volume) + $this->volumePerRecruit
+                'left_child_id' => $newUser->id
             ]);
             $side = 'left';
             $placed = true;
         } elseif ($preferredSide === 'right' && !$sponsorTree->right_child_id) {
             $sponsorTree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $sponsorTree->right_volume) + $this->volumePerRecruit
+                'right_child_id' => $newUser->id
             ]);
             $side = 'right';
             $placed = true;
         } elseif (!$sponsorTree->left_child_id) {
             $sponsorTree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $sponsorTree->left_volume) + $this->volumePerRecruit
+                'left_child_id' => $newUser->id
             ]);
             $side = 'left';
             $placed = true;
         } elseif (!$sponsorTree->right_child_id) {
             $sponsorTree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $sponsorTree->right_volume) + $this->volumePerRecruit
+                'right_child_id' => $newUser->id
             ]);
             $side = 'right';
             $placed = true;
@@ -64,8 +85,6 @@ class BinaryTreeService
 
             if ($childUser) {
                 if ($this->placeRecursively($childUser, $newUser, $spilloverSide)) {
-                    $leg = $spilloverSide . '_volume';
-                    $sponsorTree->update([$leg => ((float) $sponsorTree->{$leg}) + $this->volumePerRecruit]);
                     $side = $spilloverSide;
                     $placed = true;
                 } else {
@@ -74,8 +93,6 @@ class BinaryTreeService
                     $otherChildId = $otherSide === 'left' ? $sponsorTree->left_child_id : $sponsorTree->right_child_id;
                     $otherChildUser = User::find($otherChildId);
                     if ($otherChildUser && $this->placeRecursively($otherChildUser, $newUser, $otherSide)) {
-                        $leg = $otherSide . '_volume';
-                        $sponsorTree->update([$leg => ((float) $sponsorTree->{$leg}) + $this->volumePerRecruit]);
                         $side = $otherSide;
                         $placed = true;
                     }
@@ -97,10 +114,16 @@ class BinaryTreeService
     private function createTreeForUser(User $user)
     {
         $defaults = [
-            'left_volume' => 0,
-            'right_volume' => 0,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 0,
+            'total_right_volume' => 0,
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+            'reward_count' => 0,
+            'direct_pairs_paid' => 0,
+            'spillover_pairs_paid' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
         ];
         BinaryTree::firstOrCreate(['user_id' => $user->id], $defaults);
     }
@@ -111,60 +134,73 @@ class BinaryTreeService
     private function placeRecursively(User $current, User $newUser, ?string $preferredSide = null): bool
     {
         $defaults = [
-            'left_volume' => 0,
-            'right_volume' => 0,
-            'carryover_left' => 0,
-            'carryover_right' => 0,
+            'total_left_volume' => 0,
+            'total_right_volume' => 0,
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+            'reward_count' => 0,
+            'direct_pairs_paid' => 0,
+            'spillover_pairs_paid' => 0,
         ];
         $tree = BinaryTree::firstOrCreate(['user_id' => $current->id], $defaults);
 
+        // Try preferred side first
         if ($preferredSide === 'left' && !$tree->left_child_id) {
-            $tree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $tree->left_volume) + $this->volumePerRecruit
-            ]);
+            $tree->update(['left_child_id' => $newUser->id]);
             return true;
         } elseif ($preferredSide === 'right' && !$tree->right_child_id) {
-            $tree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $tree->right_volume) + $this->volumePerRecruit
-            ]);
+            $tree->update(['right_child_id' => $newUser->id]);
             return true;
-        } elseif (!$tree->left_child_id) {
-            $tree->update([
-                'left_child_id' => $newUser->id,
-                'left_volume' => ((float) $tree->left_volume) + $this->volumePerRecruit
-            ]);
+        }
+
+        // Try available positions in order of preference
+        if (!$tree->left_child_id) {
+            $tree->update(['left_child_id' => $newUser->id]);
             return true;
         } elseif (!$tree->right_child_id) {
+            $tree->update(['right_child_id' => $newUser->id]);
+            return true;
+        }
+
+        // Both positions taken, try spillover to weaker leg first
+        $weakerSide = $preferredSide ?: $this->getWeakerLeg($tree);
+        $childId = $weakerSide === 'left' ? $tree->left_child_id : $tree->right_child_id;
+        $childUser = User::find($childId);
+
+        if ($childUser && $this->placeRecursively($childUser, $newUser, $weakerSide)) {
+            // Update volume for spillover
+            $leg = $weakerSide . '_volume';
+            $totalLeg = 'total_' . $weakerSide . '_volume';
+            $currentLegValue = (float) $tree->getAttribute($leg);
+            $currentTotalValue = (float) $tree->getAttribute($totalLeg);
+
             $tree->update([
-                'right_child_id' => $newUser->id,
-                'right_volume' => ((float) $tree->right_volume) + $this->volumePerRecruit
+                $leg => $currentLegValue + $this->volumePerRecruit,
+                $totalLeg => $currentTotalValue + $this->volumePerRecruit
             ]);
             return true;
-        } else {
-            $weakerSide = $preferredSide ?: $this->getWeakerLeg($tree);
-            $childId = $weakerSide === 'left' ? $tree->left_child_id : $tree->right_child_id;
-            $childUser = User::find($childId);
-
-            if ($childUser && $this->placeRecursively($childUser, $newUser, $weakerSide)) {
-                $leg = $weakerSide . '_volume';
-                $tree->update([$leg => ((float) $tree->{$leg}) + $this->volumePerRecruit]);
-                return true;
-            }
-
-            // Try the other side
-            $otherSide = $weakerSide === 'left' ? 'right' : 'left';
-            $otherChildId = $otherSide === 'left' ? $tree->left_child_id : $tree->right_child_id;
-            $otherChildUser = User::find($otherChildId);
-            if ($otherChildUser && $this->placeRecursively($otherChildUser, $newUser, $otherSide)) {
-                $leg = $otherSide . '_volume';
-                $tree->update([$leg => ((float) $tree->{$leg}) + $this->volumePerRecruit]);
-                return true;
-            }
-
-            return false;
         }
+
+        // Try the other side as fallback
+        $otherSide = $weakerSide === 'left' ? 'right' : 'left';
+        $otherChildId = $otherSide === 'left' ? $tree->left_child_id : $tree->right_child_id;
+        $otherChildUser = User::find($otherChildId);
+
+        if ($otherChildUser && $this->placeRecursively($otherChildUser, $newUser, $otherSide)) {
+            $leg = $otherSide . '_volume';
+            $totalLeg = 'total_' . $otherSide . '_volume';
+            $currentLegValue = (float) $tree->getAttribute($leg);
+            $currentTotalValue = (float) $tree->getAttribute($totalLeg);
+
+            $tree->update([
+                $leg => $currentLegValue + $this->volumePerRecruit,
+                $totalLeg => $currentTotalValue + $this->volumePerRecruit
+            ]);
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -172,8 +208,8 @@ class BinaryTreeService
      */
     private function getWeakerLeg(BinaryTree $tree): string
     {
-        $leftVol = (float) ($tree->left_volume ?? 0);
-        $rightVol = (float) ($tree->right_volume ?? 0);
+        $leftVol = (float) ($tree->left_spillover ?? 0);
+        $rightVol = (float) ($tree->right_spillover ?? 0);
         if ($leftVol <= $rightVol) {
             return 'left';
         }
@@ -186,20 +222,35 @@ class BinaryTreeService
     private function propagateVolumeUp(User $user, float $volume): void
     {
         $current = $user;
-        while ($current->sponsor_id) {
+        $depth = 0;
+        $maxDepth = 100; // Prevent infinite loops
+
+        while ($current->sponsor_id && $depth < $maxDepth) {
             $sponsorId = $current->sponsor_id;
             $sponsor = User::find($sponsorId);
+
+            if (!$sponsor) break;
+
             $side = $current->placement_side;
             if ($side) {
                 $leg = $side . '_volume';
+                $totalLeg = 'total_' . $side . '_volume';
+
+                // Use atomic update to prevent race conditions
                 $sponsorTree = BinaryTree::where('user_id', $sponsor->id)->first();
                 if ($sponsorTree) {
+                    $currentLegValue = (float) $sponsorTree->getAttribute($leg);
+                    $currentTotalValue = (float) $sponsorTree->getAttribute($totalLeg);
+
                     $sponsorTree->update([
-                        $leg => ((float) $sponsorTree->getAttribute($leg)) + $volume
+                        $leg => $currentLegValue + $volume,
+                        $totalLeg => $currentTotalValue + $volume
                     ]);
                 }
             }
+
             $current = $sponsor;
+            $depth++;
         }
     }
 
@@ -208,17 +259,22 @@ class BinaryTreeService
      */
     private function awardDirectBonus(User $sponsor, User $newUser)
     {
-        $earning = Earning::create([
-            'user_id' => $sponsor->id,
-            'amount' => $this->directBonusAmount,
-            'type' => 'direct',
-            'description' => "Direct referral bonus for recruiting {$newUser->name}",
-            'status' => 'pending',
-        ]);
+        // Check if direct bonus should be awarded (first two direct referrals)
+        $directChildrenCount = User::where('sponsor_id', $sponsor->id)->count();
 
-        // Create notification for the sponsor
-        $notificationService = new NotificationService();
-        $notificationService->notifyEarnings($sponsor, $earning);
+        if ($directChildrenCount <= 2) {
+            $earning = Earning::create([
+                'user_id' => $sponsor->id,
+                'amount' => $this->directBonusAmount,
+                'type' => 'direct',
+                'description' => "Direct referral bonus for recruiting {$newUser->name}",
+                'status' => 'pending',
+            ]);
+
+            // Create notification for the sponsor
+            $notificationService = new NotificationService();
+            $notificationService->notifyEarnings($sponsor, $earning);
+        }
     }
 
     /**
@@ -229,10 +285,10 @@ class BinaryTreeService
         $tree = BinaryTree::where('user_id', $user->id)->first();
         if (!$tree) return;
 
-        $leftVol = (float) $tree->left_volume;
-        $rightVol = (float) $tree->right_volume;
-        $carryoverLeft = (float) $tree->carryover_left;
-        $carryoverRight = (float) $tree->carryover_right;
+        $leftVol = (float) $tree->left_spillover;
+        $rightVol = (float) $tree->right_spillover;
+        $carryoverLeft = (float) $tree->left_spillover;
+        $carryoverRight = (float) $tree->right_spillover;
 
         // Total available for matching
         $totalLeft = $leftVol + $carryoverLeft;
@@ -276,10 +332,12 @@ class BinaryTreeService
         $newCarryoverRight = max(0, $remainingRight - $newRightVol);
 
         $tree->update([
-            'left_volume' => $newLeftVol,
-            'right_volume' => $newRightVol,
-            'carryover_left' => $newCarryoverLeft,
-            'carryover_right' => $newCarryoverRight,
+            'left_spillover' => $newLeftVol,
+            'right_spillover' => $newRightVol,
+            'left_spillover' => $newCarryoverLeft,
+            'right_spillover' => $newCarryoverRight,
+            'left_consumed' => ((float) $tree->left_consumed) + ($leftVol - $newLeftVol),
+            'right_consumed' => ((float) $tree->right_consumed) + ($rightVol - $newRightVol),
         ]);
 
         // Notify user
@@ -290,7 +348,7 @@ class BinaryTreeService
     /**
      * Create earning record.
      */
-    private function createEarning(User $user, float $amount, string $type, string $description, string $status)
+    public function createEarning(User $user, float $amount, string $type, string $description, string $status)
     {
         Earning::create([
             'user_id' => $user->id,
@@ -330,10 +388,107 @@ class BinaryTreeService
             'user' => $user,
             'left' => $leftChild ? $this->buildTree($leftChild, $levels, $currentLevel + 1) : null,
             'right' => $rightChild ? $this->buildTree($rightChild, $levels, $currentLevel + 1) : null,
-            'left_volume' => $tree ? $tree->left_volume : 0,
-            'right_volume' => $tree ? $tree->right_volume : 0,
-            'carryover_left' => $tree ? $tree->carryover_left : 0,
-            'carryover_right' => $tree ? $tree->carryover_right : 0,
+            'left_spillover' => $tree ? $tree->left_spillover : 0,
+            'right_spillover' => $tree ? $tree->right_spillover : 0,
+            'left_spillover' => $tree ? $tree->left_spillover : 0,
+            'right_spillover' => $tree ? $tree->right_spillover : 0,
         ];
+    }
+
+    /**
+     * Build binary tree for dashboard view.
+     */
+    public function buildBinaryTreeForView(User $user, int $depth = 0, int $maxDepth = 3): ?array
+    {
+        if ($depth >= $maxDepth) {
+            return null;
+        }
+
+        $binaryTree = BinaryTree::where('user_id', $user->id)->first();
+
+        if ($binaryTree) {
+            $total_left_volume = $binaryTree->total_left_volume ?? 0;
+            $total_right_volume = $binaryTree->total_right_volume ?? 0;
+            $left_consumed = $binaryTree->left_consumed ?? 0;
+            $right_consumed = $binaryTree->right_consumed ?? 0;
+            $left_child_id = $binaryTree->left_child_id;
+            $right_child_id = $binaryTree->right_child_id;
+        } else {
+            // For cases where BinaryTree is not created (e.g., tests), find children by sponsor_id
+            $directs = User::where('sponsor_id', $user->id)->orderBy('id')->get();
+            $left_child_id = $directs->count() > 0 ? $directs[0]->id : null;
+            $right_child_id = $directs->count() > 1 ? $directs[1]->id : null;
+            $total_left_volume = 0;
+            $total_right_volume = 0;
+            $left_consumed = 0;
+            $right_consumed = 0;
+        }
+
+        // Calculate effective volumes (total - consumed)
+        $effective_left = $total_left_volume - $left_consumed;
+        $effective_right = $total_right_volume - $right_consumed;
+
+        $node = [
+            'name' => $user->name,
+            'id' => $user->id,
+            'level' => $depth + 1,
+            'left_volume' => $effective_left,
+            'right_volume' => $effective_right,
+            'total_left_volume' => $total_left_volume,
+            'total_right_volume' => $total_right_volume,
+            'left_consumed' => $left_consumed,
+            'right_consumed' => $right_consumed,
+            'earnings' => $user->account_balance ?? 0,
+            'profile_image' => $user->profile_image ?? '/default-avatar.png',
+            'children' => [null, null] // Initialize with null placeholders for left and right
+        ];
+
+        // Left child
+        if ($left_child_id) {
+            $leftUser = User::find($left_child_id);
+            if ($leftUser) {
+                $leftChild = $this->buildBinaryTreeForView($leftUser, $depth + 1, $maxDepth);
+                if ($leftChild) {
+                    $node['children'][0] = $leftChild; // Left child at index 0
+                }
+            }
+        }
+
+        // Right child
+        if ($right_child_id) {
+            $rightUser = User::find($right_child_id);
+            if ($rightUser) {
+                $rightChild = $this->buildBinaryTreeForView($rightUser, $depth + 1, $maxDepth);
+                if ($rightChild) {
+                    $node['children'][1] = $rightChild; // Right child at index 1
+                }
+            }
+        }
+
+        return $node;
+    }
+
+    /**
+     * Get current direct bonus amount
+     */
+    public function getDirectBonusAmount()
+    {
+        return $this->directBonusAmount;
+    }
+
+    /**
+     * Get current pair bonus amount
+     */
+    public function getPairBonusAmount()
+    {
+        return $this->pairBonusAmount;
+    }
+
+    /**
+     * Get current product reward interval
+     */
+    public function getProductRewardInterval()
+    {
+        return $this->productRewardInterval;
     }
 }

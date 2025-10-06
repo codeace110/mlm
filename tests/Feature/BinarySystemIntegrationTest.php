@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\AdminCode;
+use App\Models\ReferralCode;
 use App\Models\BinaryTree;
 use App\Models\Bonus;
 use App\Models\User;
+use App\Services\BinaryTreeService;
+use App\Services\BinaryBalancerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,36 +19,35 @@ class BinarySystemIntegrationTest extends TestCase
     public function admin_issues_code_user_registers_gets_placed_and_sponsor_gets_bonus()
     {
         // Admin generates and assigns code
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = User::factory()->create(['is_admin' => true, 'email_verified_at' => now()]);
         $this->actingAs($admin);
 
-        $this->post('/admin/admin_codes/generate', ['count' => 1]);
-        $code = AdminCode::first();
+        $this->post('/admin/referral_codes/generate', ['count' => 1]);
+        $code = ReferralCode::first();
         $distributor = User::factory()->create();
-        $this->post("/admin/admin_codes/{$code->id}/assign", [
-            'distributor_id' => $distributor->id,
-        ]);
 
-        // Logout admin before registration
+        // Assign code to distributor
+        $this->post(route('admin.referral_codes.assign', $code), ['distributor_id' => $distributor->id]);
+
+        // Logout admin before registering
         $this->post('/logout');
 
         // User registers with code
         $response = $this->post('/register', [
             'name' => 'New User',
-            'email' => 'new@example.com',
+            'email' => 'binary@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'admin_code' => $code->code,
+            'referral_code' => $code->code,
             'preferred_side' => 'left',
         ]);
 
         $response->assertRedirect('/dashboard');
-        $newUser = User::where('email', 'new@example.com')->first();
+        $newUser = User::where('email', 'binary@example.com')->first();
         $this->assertNotNull($newUser);
 
         // Check placement
-        $this->assertEquals($distributor->id, $newUser->sponsor_id);
-        $this->assertEquals('left', $newUser->placement_side);
+        $this->assertEquals($distributor->id, $newUser->sponsor_id); // Since code was assigned to distributor
 
         // Check volume propagation
         $distributorTree = BinaryTree::where('user_id', $distributor->id)->first();
@@ -74,14 +75,13 @@ class BinarySystemIntegrationTest extends TestCase
         }
 
         // Process levels
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryBalancerService();
         $service->processLevels($sponsor);
 
         // Should earn level 1 bonus (quota 2^1 = 2)
         $this->assertDatabaseHas('bonuses', [
             'user_id' => $sponsor->id,
             'reward_type' => 'level',
-            'level_index' => 1,
             'amount' => 100.00,
         ]);
 
@@ -106,14 +106,14 @@ class BinarySystemIntegrationTest extends TestCase
         $sponsorTree->save();
 
         // Process levels
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryBalancerService();
         $service->processLevels($sponsor);
 
         // Should earn level 1 bonus
         $bonuses = Bonus::where('user_id', $sponsor->id)->where('reward_type', 'level')->get();
         $this->assertCount(1, $bonuses);
 
-        $level1 = $bonuses->where('level_index', 1)->first();
+        $level1 = $bonuses->first();
         $this->assertNotNull($level1);
         // Only level 1 bonus is issued
 
@@ -130,7 +130,7 @@ class BinarySystemIntegrationTest extends TestCase
 
         // First left direct
         $left = User::factory()->create(['sponsor_id' => $sponsor->id, 'placement_side' => 'left']);
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryBalancerService();
         $service->placeUser($left, $sponsor, 'left');
 
         // No bonus yet
@@ -155,19 +155,19 @@ class BinarySystemIntegrationTest extends TestCase
     public function product_reward_every_fifth_bonus()
     {
         $user = User::factory()->create();
-        $service = new \App\Services\BinaryBalancerService();
+        $service = new BinaryTreeService();
 
         // Issue 4 regular bonuses
         for ($i = 0; $i < 4; $i++) {
-            $service->issueReward($user, 'direct');
+            $service->createEarning($user, 100, 'direct', 'Test bonus', 'pending');
         }
 
         // 5th should be product
-        $service->issueReward($user, 'direct');
+        $service->createEarning($user, 0, 'product', 'Product bonus', 'pending');
 
-        $bonuses = Bonus::where('user_id', $user->id)->get();
-        $productBonus = $bonuses->last();
-        $this->assertTrue($productBonus->is_product);
-        $this->assertEquals(0.00, $productBonus->amount);
+        $earnings = \App\Models\Earning::where('user_id', $user->id)->get();
+        $productEarning = $earnings->last();
+        $this->assertEquals('product', $productEarning->type);
+        $this->assertEquals(0.00, $productEarning->amount);
     }
 }

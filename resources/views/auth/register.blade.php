@@ -40,19 +40,19 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-                <!-- Admin Code (required) -->
-        <div class="mt-4">
-            <x-input-label for="admin_code" :value="__('Admin Code')" />
+       <!-- Registration Code (required) -->
+       <div class="mt-4">
+           <x-input-label for="registration_code" :value="__('Registration Code')" />
 
-            <x-text-input id="admin_code" class="block mt-1 w-full"
-                            type="text"
-                            name="admin_code"
-                            :value="old('admin_code')"
-                            required
-                            autocomplete="admin_code" />
+           <x-text-input id="registration_code" class="block mt-1 w-full"
+                           type="text"
+                           name="registration_code"
+                           :value="old('registration_code')"
+                           required
+                           autocomplete="registration_code" />
 
-            <x-input-error :messages="$errors->get('admin_code')" class="mt-2" />
-        </div>
+           <x-input-error :messages="$errors->get('registration_code')" class="mt-2" />
+       </div>
 
         <!-- Preferred Side (optional) -->
         <div class="mt-4">

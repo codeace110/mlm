@@ -44,7 +44,66 @@ class GenealogyController extends Controller
                 return $user;
             });
 
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'users' => $users->items(),
+                'pagination' => [
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total()
+                ]
+            ]);
+        }
+
         return view('admin.genealogy.index', compact('users', 'query'));
+    }
+
+    public function ajaxSearch(Request $request)
+    {
+        $query = $request->get('q', '');
+        $page = $request->get('page', 1);
+
+        $users = User::where(function($q) use ($query) {
+            $q->where('name', 'LIKE', "%{$query}%")
+              ->orWhere('email', 'LIKE', "%{$query}%")
+              ->orWhere('referral_code', 'LIKE', "%{$query}%");
+        })
+        ->with('sponsor')
+        ->paginate(20, ['*'], 'page', $page)
+        ->through(function ($user) {
+            $binaryTree = \App\Models\BinaryTree::where('user_id', $user->id)->first();
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'referral_code' => $user->referral_code,
+                'profile_image' => $user->profile_image,
+                'sponsor_name' => $user->sponsor ? $user->sponsor->name : 'N/A',
+                'level' => $this->calculateLevel($user),
+                'total_left_volume' => $binaryTree ? $binaryTree->total_left_volume : 0,
+                'total_right_volume' => $binaryTree ? $binaryTree->total_right_volume : 0,
+                'left_consumed' => $binaryTree ? $binaryTree->left_consumed : 0,
+                'right_consumed' => $binaryTree ? $binaryTree->right_consumed : 0,
+                'effective_left' => $binaryTree ? ($binaryTree->total_left_volume - $binaryTree->left_consumed) : 0,
+                'effective_right' => $binaryTree ? ($binaryTree->total_right_volume - $binaryTree->right_consumed) : 0,
+                'level_index' => $binaryTree ? $binaryTree->level_index : 1,
+                'created_at' => $user->created_at->format('Y-m-d H:i')
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'users' => $users->items(),
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'has_more' => $users->hasMorePages()
+            ]
+        ]);
     }
 
     public function network($userId)

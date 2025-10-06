@@ -8,7 +8,7 @@
                 <div class="card-header pb-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6>My Network & Referrals</h6>
-                        <a href="{{ route('dashboard.network') }}" class="btn btn-primary btn-sm">
+                        <a href="{{ route('network') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-sitemap me-1"></i>View Binary Network Tree
                         </a>
                     </div>

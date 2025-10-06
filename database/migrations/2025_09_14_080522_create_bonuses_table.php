@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('user_id', 20);
             $table->decimal('amount', 10, 2);
             $table->boolean('is_product')->default(false);
-            $table->enum('reward_type', ['direct', 'level']);
+            $table->enum('reward_type', ['direct', 'level', 'spillover']);
             $table->integer('level_index')->nullable();
             $table->integer('pair_count')->default(1);
             $table->string('description');

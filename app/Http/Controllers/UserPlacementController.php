@@ -27,31 +27,27 @@ class UserPlacementController extends Controller
             'preferred_side' => 'nullable|string|in:left,right',
         ]);
 
-        $newUser = User::findOrFail($request->new_user_id);
-        $sponsor = User::findOrFail($request->sponsor_id);
-
-        // Ensure sponsor is not the same as new user
-        if ($newUser->id === $sponsor->id) {
-            return response()->json(['error' => 'User cannot be their own sponsor'], 400);
-        }
-
-        // Ensure new user doesn't already have a sponsor
-        if ($newUser->sponsor_id) {
-            return response()->json(['error' => 'User already has a sponsor'], 400);
-        }
-
         try {
-            // Set sponsor relationship
-            $newUser->sponsor_id = $sponsor->id;
-            $newUser->save();
+            $newUser = User::findOrFail($request->new_user_id);
+            $sponsor = User::findOrFail($request->sponsor_id);
 
-            // Place user and calculate bonuses
+            // Ensure sponsor is not the same as new user
+            if ($newUser->id === $sponsor->id) {
+                return response()->json(['error' => 'User cannot be their own sponsor'], 400);
+            }
+
+            // Ensure new user doesn't already have a sponsor
+            if ($newUser->sponsor_id) {
+                return response()->json(['error' => 'User already has a sponsor'], 400);
+            }
+
             $this->balancerService->placeUser($newUser, $sponsor, $request->preferred_side);
 
             return response()->json([
                 'message' => 'User placed successfully',
                 'user_id' => $newUser->id,
                 'sponsor_id' => $sponsor->id,
+                'placement_side' => $newUser->placement_side,
             ]);
 
         } catch (\Exception $e) {
