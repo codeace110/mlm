@@ -58,14 +58,12 @@ class MlmTestDataSeeder extends Seeder
 
         BinaryTree::create([
             'user_id' => $admin->id,
-            'left_volume' => 0,
-            'right_volume' => 0,
-            'left_spillover' => 0,
-            'right_spillover' => 0,
             'total_left_volume' => 0,
             'total_right_volume' => 0,
             'left_consumed' => 0,
             'right_consumed' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
         ]);
 
         return $admin;
@@ -111,14 +109,12 @@ class MlmTestDataSeeder extends Seeder
 
             BinaryTree::create([
                 'user_id' => $distributor->id,
-                'left_volume' => rand(10, 50),
-                'right_volume' => rand(10, 50),
-                'left_spillover' => rand(0, 10),
-                'right_spillover' => rand(0, 10),
                 'total_left_volume' => rand(50, 100),
                 'total_right_volume' => rand(50, 100),
                 'left_consumed' => rand(0, 20),
                 'right_consumed' => rand(0, 20),
+                'left_spillover' => rand(0, 10),
+                'right_spillover' => rand(0, 10),
             ]);
 
             $distributors[] = $distributor;
@@ -156,14 +152,12 @@ class MlmTestDataSeeder extends Seeder
                 // Create binary tree for referral
                 BinaryTree::create([
                     'user_id' => $referral->id,
-                    'left_volume' => rand(5, 25),
-                    'right_volume' => rand(5, 25),
-                    'left_spillover' => rand(0, 5),
-                    'right_spillover' => rand(0, 5),
                     'total_left_volume' => rand(25, 50),
                     'total_right_volume' => rand(25, 50),
                     'left_consumed' => rand(0, 10),
                     'right_consumed' => rand(0, 10),
+                    'left_spillover' => rand(0, 5),
+                    'right_spillover' => rand(0, 5),
                 ]);
             }
         }

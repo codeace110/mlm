@@ -6315,6 +6315,7 @@ class ComposerStaticInitfe33f98a750b8c5a51b30c78bd3fab21
         'Tests\\Feature\\AuthRoutesTest' => __DIR__ . '/../..' . '/tests/Feature/AuthRoutesTest.php',
         'Tests\\Feature\\BinaryBalancerServiceTest' => __DIR__ . '/../..' . '/tests/Feature/BinaryBalancerServiceTest.php',
         'Tests\\Feature\\BinarySystemIntegrationTest' => __DIR__ . '/../..' . '/tests/Feature/BinarySystemIntegrationTest.php',
+        'Tests\\Feature\\CompleteMlmSystemIntegrationTest' => __DIR__ . '/../..' . '/tests/Feature/CompleteMlmSystemIntegrationTest.php',
         'Tests\\Feature\\ConcurrencyTest' => __DIR__ . '/../..' . '/tests/Feature/ConcurrencyTest.php',
         'Tests\\Feature\\DashboardControllerTest' => __DIR__ . '/../..' . '/tests/Feature/DashboardControllerTest.php',
         'Tests\\Feature\\DashboardNetworkTest' => __DIR__ . '/../..' . '/tests/Feature/DashboardNetworkTest.php',

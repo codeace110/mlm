@@ -5753,6 +5753,7 @@ return array(
     'Tests\\Feature\\AuthRoutesTest' => $baseDir . '/tests/Feature/AuthRoutesTest.php',
     'Tests\\Feature\\BinaryBalancerServiceTest' => $baseDir . '/tests/Feature/BinaryBalancerServiceTest.php',
     'Tests\\Feature\\BinarySystemIntegrationTest' => $baseDir . '/tests/Feature/BinarySystemIntegrationTest.php',
+    'Tests\\Feature\\CompleteMlmSystemIntegrationTest' => $baseDir . '/tests/Feature/CompleteMlmSystemIntegrationTest.php',
     'Tests\\Feature\\ConcurrencyTest' => $baseDir . '/tests/Feature/ConcurrencyTest.php',
     'Tests\\Feature\\DashboardControllerTest' => $baseDir . '/tests/Feature/DashboardControllerTest.php',
     'Tests\\Feature\\DashboardNetworkTest' => $baseDir . '/tests/Feature/DashboardNetworkTest.php',

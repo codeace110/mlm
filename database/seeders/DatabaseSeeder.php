@@ -40,8 +40,6 @@ class DatabaseSeeder extends Seeder
         // Create binary tree record for admin
         BinaryTree::create([
             'user_id' => $admin->id,
-            'left_volume' => 0,
-            'right_volume' => 0,
             'total_left_volume' => 0,
             'total_right_volume' => 0,
             'left_consumed' => 0,
@@ -161,8 +159,6 @@ class DatabaseSeeder extends Seeder
         // Create binary tree record for distributor
         BinaryTree::create([
             'user_id' => $distributor->id,
-            'left_volume' => 0,
-            'right_volume' => 0,
             'total_left_volume' => 0,
             'total_right_volume' => 0,
             'left_consumed' => 0,
