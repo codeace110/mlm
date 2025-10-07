@@ -29,8 +29,8 @@ class AdminCodeController extends Controller
         // Get statistics using the service
         $stats = [
             'total' => AdminCode::count(),
-            'issued' => AdminCode::where('status', 'issued')->count(),
-            'unused' => AdminCode::where('status', 'unused')->count(),
+            'available' => AdminCode::where('status', 'available')->count(),
+            'assigned' => AdminCode::where('status', 'assigned')->count(),
             'used' => AdminCode::where('status', 'used')->count(),
         ];
 
@@ -91,8 +91,8 @@ class AdminCodeController extends Controller
     {
         $request->validate(['distributor_id' => 'required|exists:users,id']);
 
-        if ($code->status !== 'issued') {
-            return back()->with('error', 'Only issued codes can be issued to distributors.');
+        if ($code->status !== 'available') {
+            return back()->with('error', 'Only available codes can be issued to distributors.');
         }
 
         $distributor = User::find($request->distributor_id);
@@ -100,7 +100,7 @@ class AdminCodeController extends Controller
         DB::transaction(function () use ($code, $distributor) {
             $code->update([
                 'distributor_id' => $distributor->id,
-                'status' => 'unused',
+                'status' => 'available',
             ]);
         });
 

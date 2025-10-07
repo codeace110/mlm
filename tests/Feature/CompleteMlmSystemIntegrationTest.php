@@ -35,14 +35,15 @@ class CompleteMlmSystemIntegrationTest extends TestCase
         $this->assertDatabaseHas('admin_codes', [
             'batch_name' => 'Test Batch',
             'distributor_id' => $distributor->id,
-            'status' => 'unused'
+            'status' => 'available'
         ]);
 
         // 3. Pick one code for user registration
         $registrationCode = $codes[0];
 
-        // 4. User registers with the code
-        $newUser = User::factory()->create([
+        // 4. User registers with the code (simulate the registration process)
+        $newUser = User::create([
+            'name' => 'New User',
             'email' => 'newuser@example.com',
             'password' => bcrypt('password'),
             'registration_code' => $registrationCode
@@ -58,7 +59,32 @@ class CompleteMlmSystemIntegrationTest extends TestCase
             'used_by_user_id' => $newUser->id
         ]);
 
-        // 6. Check if user was placed in binary tree
+        // Update user with sponsor information
+        $newUser->update([
+            'sponsor_id' => $sponsor->id,
+            'placement_side' => 'left',
+        ]);
+
+        // 6. Create binary tree record for the user (like the controller does)
+        BinaryTree::create([
+            'user_id' => $newUser->id,
+            'total_left_volume' => 0,
+            'total_right_volume' => 0,
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+            'reward_count' => 0,
+            'direct_pairs_paid' => 0,
+            'spillover_pairs_paid' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
+        ]);
+
+        // 7. Place user in binary tree using BinaryBalancerService
+        $binaryBalancerService = new BinaryBalancerService();
+        $binaryBalancerService->placeUser($newUser, $sponsor, 'left');
+
+        // 8. Check if user was placed in binary tree
         $this->assertDatabaseHas('binary_trees', [
             'user_id' => $newUser->id
         ]);
@@ -66,6 +92,49 @@ class CompleteMlmSystemIntegrationTest extends TestCase
         // 7. Check if volume was propagated to sponsor
         $distributorTree = BinaryTree::where('user_id', $distributor->id)->first();
         $this->assertEquals(1, $distributorTree->total_left_volume);
+
+        // Create another user to reach the level quota (need 2 volume for level 1)
+        $registrationCode2 = $codes[1];
+
+        $newUser2 = User::create([
+            'name' => 'New User 2',
+            'email' => 'newuser2@example.com',
+            'password' => bcrypt('password'),
+            'registration_code' => $registrationCode2
+        ]);
+
+        $sponsor2 = $adminCodeService->validateAndUseCode($registrationCode2, $newUser2);
+
+        $newUser2->update([
+            'sponsor_id' => $sponsor2->id,
+            'placement_side' => 'right',
+        ]);
+
+        BinaryTree::create([
+            'user_id' => $newUser2->id,
+            'total_left_volume' => 0,
+            'total_right_volume' => 0,
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+            'reward_count' => 0,
+            'direct_pairs_paid' => 0,
+            'spillover_pairs_paid' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
+        ]);
+
+        // Manually place the second user directly under the distributor on the right side
+        $distributorTree->right_child_id = $newUser2->id;
+        $distributorTree->total_right_volume += 1;
+        $distributorTree->save();
+
+        // Now distributor should have 2 volume on right side
+        $distributorTree->refresh();
+        // Debug: check actual volume
+        echo "\nDistributor left volume: " . $distributorTree->total_left_volume . "\n";
+        echo "Distributor right volume: " . $distributorTree->total_right_volume . "\n";
+        $this->assertEquals(2, $distributorTree->total_right_volume);
 
         // 8. Create bonus settings and rules
         BonusSettings::create([

@@ -78,9 +78,9 @@ class EnhancedReferralCodeService
     {
         return DB::transaction(function() use ($code, $distributor) {
             $code->update([
-                'assigned_to' => $distributor->id,
+                'distributor_id' => $distributor->id,
                 'status' => 'assigned',
-                'assigned_at' => now(),
+                'issued_at' => now(),
             ]);
 
             Log::info('Code assigned to distributor', [
@@ -110,9 +110,9 @@ class EnhancedReferralCodeService
 
                 if ($code) {
                     $code->update([
-                        'assigned_to' => $distributor->id,
+                        'distributor_id' => $distributor->id,
                         'status' => 'assigned',
-                        'assigned_at' => now(),
+                        'issued_at' => now(),
                     ]);
 
                     $assigned[] = $code->code;
@@ -141,7 +141,7 @@ class EnhancedReferralCodeService
     {
         return DB::transaction(function() use ($code, $newUser) {
             // First check if it's an available/assigned code
-            $adminCode = AdminCode::with('assignedTo')
+            $adminCode = AdminCode::with('distributor')
                 ->whereRaw('UPPER(code) = ?', [strtoupper($code)])
                 ->whereIn('status', ['available', 'assigned'])
                 ->where(function($query) {
@@ -155,13 +155,25 @@ class EnhancedReferralCodeService
                 Log::warning('Invalid or expired referral code used', [
                     'code' => $code,
                     'user_id' => $newUser->id,
+                    'searched_statuses' => ['available', 'assigned'],
                 ]);
+
+                // Debug: Check if code exists with different status
+                $existingCode = AdminCode::whereRaw('UPPER(code) = ?', [strtoupper($code)])->first();
+                if ($existingCode) {
+                    Log::warning('Code exists but wrong status', [
+                        'code' => $code,
+                        'current_status' => $existingCode->status,
+                        'distributor_id' => $existingCode->distributor_id,
+                    ]);
+                }
+
                 return null;
             }
 
             // Mark as used
             $adminCode->update([
-                'used_by' => $newUser->id,
+                'used_by_user_id' => $newUser->id,
                 'status' => 'used',
                 'used_at' => now(),
             ]);
@@ -172,10 +184,10 @@ class EnhancedReferralCodeService
             Log::info('Referral code used successfully', [
                 'code' => $code,
                 'used_by' => $newUser->id,
-                'assigned_to' => $adminCode->assigned_to,
+                'distributor_id' => $adminCode->distributor_id,
             ]);
 
-            return $adminCode->assignedTo ?: null; // Return the distributor as sponsor
+            return $adminCode->distributor ?: null; // Return the distributor as sponsor
         });
     }
 
@@ -202,7 +214,7 @@ class EnhancedReferralCodeService
             ->count();
 
         return [
-            'total_codes' => $totalCodes,
+            'total' => $totalCodes,
             'available' => $availableCodes,
             'assigned' => $assignedCodes,
             'used' => $usedCodes,
@@ -218,7 +230,7 @@ class EnhancedReferralCodeService
      */
     public function getDistributorStats(User $distributor): array
     {
-        $codes = AdminCode::where('assigned_to', $distributor->id)
+        $codes = AdminCode::where('distributor_id', $distributor->id)
             ->get()
             ->groupBy('status');
 
@@ -276,9 +288,9 @@ class EnhancedReferralCodeService
         // Create a record in the referrals table for tracking
         \App\Models\Referral::create([
             'user_id' => $user->id,
-            'sponsor_id' => $code->assigned_to,
+            'sponsor_id' => $code->distributor_id,
             'referral_code' => $code->code,
-            'status' => 'active',
+            'status' => 'approved', // Use 'approved' instead of 'active'
             'joined_at' => now(),
         ]);
     }

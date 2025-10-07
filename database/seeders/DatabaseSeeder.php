@@ -134,7 +134,7 @@ class DatabaseSeeder extends Seeder
             AdminCode::create([
                 'code' => $code,
                 'distributor_id' => $admin->id,
-                'status' => 'issued',
+                'status' => 'assigned',
             ]);
         }
 
@@ -172,7 +172,7 @@ class DatabaseSeeder extends Seeder
         if ($adminCode) {
             $adminCode->update([
                 'distributor_id' => $distributor->id,
-                'status' => 'unused',
+                'status' => 'assigned',
             ]);
         }
 

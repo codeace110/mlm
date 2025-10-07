@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('referral_codes', function (Blueprint $table) {
-            $table->unsignedBigInteger('batch_id')->nullable()->after('generated_by');
+            $table->string('batch_id', 50)->nullable()->after('generated_by');
             $table->index('batch_id');
         });
     }

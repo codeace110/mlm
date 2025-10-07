@@ -44,7 +44,7 @@ class UserController extends Controller
         $code = \App\Models\AdminCode::create([
             'code' => strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)),
             'distributor_id' => $user->id,
-            'status' => 'unused',
+            'status' => 'available',
         ]);
 
         return back()->with('success', 'Admin code generated: ' . $code->code);

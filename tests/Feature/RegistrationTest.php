@@ -17,8 +17,19 @@ class RegistrationTest extends TestCase
         $distributor = User::factory()->create();
         $adminCode = AdminCode::factory()->create([
             'distributor_id' => $distributor->id,
-            'status' => 'issued',
+            'status' => 'assigned',
         ]);
+
+        // Debug: Check the admin code before registration
+        $adminCode->refresh();
+        $this->assertEquals('assigned', $adminCode->status);
+        $this->assertNotNull($adminCode->distributor_id);
+
+        // Debug: Check if code exists in database
+        $existingCode = \App\Models\AdminCode::whereRaw('UPPER(code) = ?', [strtoupper($adminCode->code)])->first();
+        $this->assertNotNull($existingCode, 'Admin code should exist in database');
+        $this->assertEquals('assigned', $existingCode->status, 'Admin code should have assigned status');
+        $this->assertNotNull($existingCode->distributor_id, 'Admin code should have distributor_id');
 
         $response = $this->post('/register', [
             'name' => 'New User',
@@ -83,7 +94,7 @@ class RegistrationTest extends TestCase
         $distributor = User::factory()->create();
         $adminCode = AdminCode::factory()->create([
             'distributor_id' => $distributor->id,
-            'status' => 'issued',
+            'status' => 'assigned',
         ]);
 
         $this->post('/register', [

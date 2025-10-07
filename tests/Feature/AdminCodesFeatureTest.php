@@ -50,7 +50,7 @@ class AdminCodesFeatureTest extends TestCase
         $this->assertDatabaseCount('admin_codes', 50);
         $this->assertDatabaseHas('admin_codes', [
             'batch_name' => 'Test Batch 2024',
-            'status' => 'issued'
+            'status' => 'assigned'
         ]);
 
         // Verify all codes are unique
@@ -62,7 +62,7 @@ class AdminCodesFeatureTest extends TestCase
     {
         // Setup: create issued code
         $code = AdminCode::factory()->create([
-            'status' => 'issued',
+            'status' => 'assigned',
             'distributor_id' => null
         ]);
 
@@ -133,7 +133,7 @@ class AdminCodesFeatureTest extends TestCase
     {
         // Setup: create issued code
         $code = AdminCode::factory()->create([
-            'status' => 'issued',
+            'status' => 'assigned',
             'distributor_id' => null
         ]);
 
@@ -157,7 +157,7 @@ class AdminCodesFeatureTest extends TestCase
     {
         // Setup: create some codes
         $codes = AdminCode::factory()->count(10)->create([
-            'status' => 'issued'
+            'status' => 'assigned'
         ]);
 
         // Action: admin downloads CSV
@@ -185,7 +185,7 @@ class AdminCodesFeatureTest extends TestCase
         $codes = AdminCode::factory()->count(5)->create([
             'batch_id' => $batchId,
             'batch_name' => 'Test Batch',
-            'status' => 'issued'
+            'status' => 'assigned'
         ]);
 
         // Action: admin downloads specific batch CSV
@@ -215,7 +215,7 @@ class AdminCodesFeatureTest extends TestCase
     public function test_admin_can_view_code_statistics()
     {
         // Setup: create codes with different statuses
-        AdminCode::factory()->count(10)->create(['status' => 'issued']);
+        AdminCode::factory()->count(10)->create(['status' => 'assigned']);
         AdminCode::factory()->count(5)->create(['status' => 'unused']);
         AdminCode::factory()->count(3)->create(['status' => 'used']);
 

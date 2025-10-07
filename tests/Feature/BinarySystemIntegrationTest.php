@@ -64,7 +64,19 @@ class BinarySystemIntegrationTest extends TestCase
     public function one_sided_growth_earns_quota_bonus()
     {
         $sponsor = User::factory()->create();
-        $sponsorTree = BinaryTree::factory()->create(['user_id' => $sponsor->id]);
+        $sponsorTree = BinaryTree::create([
+            'user_id' => $sponsor->id,
+            'total_left_volume' => 0,
+            'total_right_volume' => 0,
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+            'reward_count' => 0,
+            'direct_pairs_paid' => 0,
+            'spillover_pairs_paid' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
+        ]);
 
         // Place 8 users on right
         for ($i = 0; $i < 8; $i++) {
@@ -94,7 +106,19 @@ class BinarySystemIntegrationTest extends TestCase
     public function balanced_growth_earns_multiple_bonuses()
     {
         $sponsor = User::factory()->create();
-        $sponsorTree = BinaryTree::factory()->create(['user_id' => $sponsor->id]);
+        $sponsorTree = BinaryTree::create([
+            'user_id' => $sponsor->id,
+            'total_left_volume' => 0,
+            'total_right_volume' => 0,
+            'left_consumed' => 0,
+            'right_consumed' => 0,
+            'level_index' => 1,
+            'reward_count' => 0,
+            'direct_pairs_paid' => 0,
+            'spillover_pairs_paid' => 0,
+            'left_spillover' => 0,
+            'right_spillover' => 0,
+        ]);
 
         // Place 4 on left, 4 on right
         for ($i = 0; $i < 4; $i++) {

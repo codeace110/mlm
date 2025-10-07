@@ -115,11 +115,10 @@ class BinaryBalancerService
     public function placeUser(User $newUser, User $sponsor, ?string $preferredSide = null): void
     {
         DB::transaction(function() use ($newUser, $sponsor, $preferredSide) {
-            // Lock the sponsor's binary tree to prevent concurrent modifications
-            $sponsorTree = BinaryTree::where('user_id', $sponsor->id)
-                ->lockForUpdate()
-                ->firstOrCreate([
-                    'user_id' => $sponsor->id,
+            // Get the sponsor's binary tree
+            $sponsorTree = BinaryTree::updateOrCreate(
+                ['user_id' => $sponsor->id],
+                [
                     'total_left_volume' => 0,
                     'total_right_volume' => 0,
                     'left_consumed' => 0,
@@ -130,13 +129,13 @@ class BinaryBalancerService
                     'spillover_pairs_paid' => 0,
                     'left_spillover' => 0,
                     'right_spillover' => 0,
-                ]);
+                ]
+            );
 
-            // Ensure new user has a binary tree record (locked)
-            $newUserTree = BinaryTree::where('user_id', $newUser->id)
-                ->lockForUpdate()
-                ->firstOrCreate([
-                    'user_id' => $newUser->id,
+            // Ensure new user has a binary tree record
+            $newUserTree = BinaryTree::updateOrCreate(
+                ['user_id' => $newUser->id],
+                [
                     'total_left_volume' => 0,
                     'total_right_volume' => 0,
                     'left_consumed' => 0,
@@ -147,7 +146,8 @@ class BinaryBalancerService
                     'spillover_pairs_paid' => 0,
                     'left_spillover' => 0,
                     'right_spillover' => 0,
-                ]);
+                ]
+            );
 
             // Update user placement info
             $newUser->sponsor_id = $sponsor->id;
@@ -188,11 +188,10 @@ class BinaryBalancerService
 
             if (!$sponsor) break;
 
-            // Lock the sponsor's tree for update to prevent concurrent modifications
-            $sponsorTree = BinaryTree::where('user_id', $sponsor->id)
-                ->lockForUpdate()
-                ->firstOrCreate([
-                    'user_id' => $sponsor->id,
+            // Get the sponsor's tree
+            $sponsorTree = BinaryTree::updateOrCreate(
+                ['user_id' => $sponsor->id],
+                [
                     'total_left_volume' => 0,
                     'total_right_volume' => 0,
                     'left_consumed' => 0,
@@ -203,7 +202,8 @@ class BinaryBalancerService
                     'spillover_pairs_paid' => 0,
                     'left_spillover' => 0,
                     'right_spillover' => 0,
-                ]);
+                ]
+            );
 
             // Determine which side this user is on relative to their sponsor
             $position = $this->getPositionRelativeToSponsor($current, $sponsor);
@@ -215,8 +215,8 @@ class BinaryBalancerService
                 $sponsorTree->total_right_volume += $volume;
             }
 
-            // Handle carryover logic for unbalanced trees
-            $this->handleCarryover($sponsorTree);
+            // Handle carryover logic for unbalanced trees (disabled for now)
+            // $this->handleCarryover($sponsorTree);
 
             $sponsorTree->save();
 
@@ -262,10 +262,11 @@ class BinaryBalancerService
      */
     public function calculateDirectBonus(User $user): void
     {
-        // Lock the user's binary tree for update
-        $tree = BinaryTree::where('user_id', $user->id)
-            ->lockForUpdate()
-            ->firstOrCreate([
+        // Get the user's binary tree
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+
+        if (!$tree) {
+            $tree = BinaryTree::create([
                 'user_id' => $user->id,
                 'total_left_volume' => 0,
                 'total_right_volume' => 0,
@@ -278,6 +279,7 @@ class BinaryBalancerService
                 'left_spillover' => 0,
                 'right_spillover' => 0,
             ]);
+        }
 
         // Count direct children on each side
         $directLeft = User::where('sponsor_id', $user->id)->where('placement_side', 'left')->count();
@@ -339,10 +341,11 @@ class BinaryBalancerService
      */
     public function calculateSpilloverBonus(User $user): void
     {
-        // Lock the user's binary tree for update
-        $tree = BinaryTree::where('user_id', $user->id)
-            ->lockForUpdate()
-            ->firstOrCreate([
+        // Get the user's binary tree
+        $tree = BinaryTree::where('user_id', $user->id)->first();
+
+        if (!$tree) {
+            $tree = BinaryTree::create([
                 'user_id' => $user->id,
                 'total_left_volume' => 0,
                 'total_right_volume' => 0,
@@ -355,6 +358,7 @@ class BinaryBalancerService
                 'left_spillover' => 0,
                 'right_spillover' => 0,
             ]);
+        }
 
         // Count spillover children on each side (non-direct referrals)
         $spilloverLeft = $this->countSpilloverChildren($user, 'left');
@@ -447,7 +451,10 @@ class BinaryBalancerService
         // Lock the user's binary tree for update to prevent concurrent modifications
         $tree = BinaryTree::where('user_id', $user->id)
             ->lockForUpdate()
-            ->firstOrCreate([
+            ->first();
+
+        if (!$tree) {
+            $tree = BinaryTree::create([
                 'user_id' => $user->id,
                 'total_left_volume' => 0,
                 'total_right_volume' => 0,
@@ -460,6 +467,7 @@ class BinaryBalancerService
                 'left_spillover' => 0,
                 'right_spillover' => 0,
             ]);
+        }
 
         if (!$tree) return;
 
@@ -493,7 +501,7 @@ class BinaryBalancerService
                     }
 
                     // Issue reward for this level
-                    $this->issueReward($user, 'level', $level);
+                    $this->issueReward($user, 'level', $level, $tree);
 
                     // Consume volumes based on which quotas were reached
                     if ($leftQuotaReached && $rightQuotaReached) {
@@ -533,24 +541,30 @@ class BinaryBalancerService
      * RULE: No duplicate reward redemption (track with consumed counters)
      * RULE: Always increment reward_count
      */
-    public function issueReward(User $user, string $rewardType, ?int $levelIndex = null): Bonus
+    public function issueReward(User $user, string $rewardType, ?int $levelIndex = null, ?BinaryTree $existingTree = null): Bonus
     {
-        // Lock the user's binary tree for update to prevent concurrent modifications
-        $tree = BinaryTree::where('user_id', $user->id)
-            ->lockForUpdate()
-            ->firstOrCreate([
-                'user_id' => $user->id,
-                'total_left_volume' => 0,
-                'total_right_volume' => 0,
-                'left_consumed' => 0,
-                'right_consumed' => 0,
-                'level_index' => 1,
-                'reward_count' => 0,
-                'direct_pairs_paid' => 0,
-                'spillover_pairs_paid' => 0,
-                'left_spillover' => 0,
-                'right_spillover' => 0,
-            ]);
+        // Use existing tree if provided, otherwise lock and get/create
+        if ($existingTree) {
+            $tree = $existingTree;
+        } else {
+            $tree = BinaryTree::where('user_id', $user->id)->first();
+
+            if (!$tree) {
+                $tree = BinaryTree::create([
+                    'user_id' => $user->id,
+                    'total_left_volume' => 0,
+                    'total_right_volume' => 0,
+                    'left_consumed' => 0,
+                    'right_consumed' => 0,
+                    'level_index' => 1,
+                    'reward_count' => 0,
+                    'direct_pairs_paid' => 0,
+                    'spillover_pairs_paid' => 0,
+                    'left_spillover' => 0,
+                    'right_spillover' => 0,
+                ]);
+            }
+        }
 
         // Always increment reward_count first
         $tree->reward_count++;
@@ -610,11 +624,10 @@ class BinaryBalancerService
     {
         $preferredSide = $preferredSide ?? 'left';
 
-        // Lock sponsor's tree for update to prevent concurrent placements
-        $sponsorTree = BinaryTree::where('user_id', $sponsor->id)
-            ->lockForUpdate()
-            ->firstOrCreate([
-                'user_id' => $sponsor->id,
+        // Get sponsor's tree
+        $sponsorTree = BinaryTree::updateOrCreate(
+            ['user_id' => $sponsor->id],
+            [
                 'left_spillover' => 0,
                 'right_spillover' => 0,
                 'total_left_volume' => 0,
@@ -626,7 +639,8 @@ class BinaryBalancerService
                 'direct_pairs_paid' => 0,
                 'spillover_pairs_paid' => 0,
                 'placement_side' => null,
-            ]);
+            ]
+        );
 
         // Try to place in preferred position first
         if ($preferredSide === 'left' && !$sponsorTree->left_child_id) {
@@ -750,11 +764,10 @@ class BinaryBalancerService
      */
     private function spilloverToChild(User $newUser, User $child, string $side): void
     {
-        // Lock child's tree for update to prevent concurrent placements
-        $childTree = BinaryTree::where('user_id', $child->id)
-            ->lockForUpdate()
-            ->firstOrCreate([
-                'user_id' => $child->id,
+        // Get child's tree
+        $childTree = BinaryTree::updateOrCreate(
+            ['user_id' => $child->id],
+            [
                 'total_left_volume' => 0,
                 'total_right_volume' => 0,
                 'left_consumed' => 0,
@@ -765,7 +778,8 @@ class BinaryBalancerService
                 'spillover_pairs_paid' => 0,
                 'left_spillover' => 0,
                 'right_spillover' => 0,
-            ]);
+            ]
+        );
 
         // For spillover, the placement_side should be relative to the original sponsor, not the spillover parent
         $newUser->placement_side = $side;

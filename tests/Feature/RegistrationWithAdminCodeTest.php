@@ -32,7 +32,7 @@ class RegistrationWithAdminCodeTest extends TestCase
         // Create admin code assigned to sponsor
         $this->adminCode = AdminCode::factory()->create([
             'code' => 'TESTCODE',
-            'status' => 'issued',
+            'status' => 'assigned',
             'distributor_id' => $this->sponsor->id
         ]);
     }
@@ -40,7 +40,7 @@ class RegistrationWithAdminCodeTest extends TestCase
     public function test_successful_registration_with_valid_admin_code()
     {
         // Setup: ensure admin code is issued and assigned to sponsor
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Action: register new user with valid admin code
         $response = $this->post(route('register'), [
@@ -104,7 +104,7 @@ class RegistrationWithAdminCodeTest extends TestCase
         // Verify admin code was not consumed
         $this->assertDatabaseHas('admin_codes', [
             'id' => $this->adminCode->id,
-            'status' => 'issued'
+            'status' => 'assigned'
         ]);
     }
 
@@ -142,7 +142,7 @@ class RegistrationWithAdminCodeTest extends TestCase
         // Setup: create code without distributor
         $codeWithoutDistributor = AdminCode::factory()->create([
             'code' => 'ORPHANCODE',
-            'status' => 'issued',
+            'status' => 'assigned',
             'distributor_id' => null
         ]);
 
@@ -189,7 +189,7 @@ class RegistrationWithAdminCodeTest extends TestCase
     public function test_registration_creates_binary_tree_structure()
     {
         // Setup: ensure admin code is issued
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Action: register new user
         $response = $this->post(route('register'), [
@@ -224,7 +224,7 @@ class RegistrationWithAdminCodeTest extends TestCase
     public function test_registration_triggers_bonus_creation()
     {
         // Setup: ensure admin code is issued
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Action: register new user
         $response = $this->post(route('register'), [
@@ -266,7 +266,7 @@ class RegistrationWithAdminCodeTest extends TestCase
     public function test_registration_handles_concurrent_requests()
     {
         // Setup: ensure admin code is issued
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Action: two users try to register with same code simultaneously
         $response1 = $this->post(route('register'), [
@@ -301,7 +301,7 @@ class RegistrationWithAdminCodeTest extends TestCase
     public function test_registration_validation_errors()
     {
         // Setup: ensure admin code is issued
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Action: register with validation errors
         $response = $this->post(route('register'), [
@@ -324,14 +324,14 @@ class RegistrationWithAdminCodeTest extends TestCase
         // Verify admin code was not consumed
         $this->assertDatabaseHas('admin_codes', [
             'id' => $this->adminCode->id,
-            'status' => 'issued'
+            'status' => 'assigned'
         ]);
     }
 
     public function test_registration_creates_proper_user_relationships()
     {
         // Setup: ensure admin code is issued
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Action: register new user
         $response = $this->post(route('register'), [
@@ -362,7 +362,7 @@ class RegistrationWithAdminCodeTest extends TestCase
     public function test_registration_handles_database_transaction_rollback()
     {
         // Setup: ensure admin code is issued
-        $this->adminCode->update(['status' => 'issued']);
+        $this->adminCode->update(['status' => 'assigned']);
 
         // Mock the BinaryBalancerService to throw an exception
         $this->mock(BinaryBalancerService::class, function ($mock) {
@@ -391,7 +391,7 @@ class RegistrationWithAdminCodeTest extends TestCase
         // Verify admin code was not consumed
         $this->assertDatabaseHas('admin_codes', [
             'id' => $this->adminCode->id,
-            'status' => 'issued'
+            'status' => 'assigned'
         ]);
 
         // Verify no binary tree was created

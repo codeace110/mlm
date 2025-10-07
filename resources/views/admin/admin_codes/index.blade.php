@@ -34,7 +34,7 @@
                                 <div class="col-8">
                                     <div class="numbers">
                                         <p class="text-sm mb-0 text-uppercase font-weight-bold">Available</p>
-                                        <h5 class="font-weight-bolder text-success">{{ $stats['issued'] }}</h5>
+                                        <h5 class="font-weight-bolder text-success">{{ $stats['available'] }}</h5>
                                     </div>
                                 </div>
                                 <div class="col-4 text-end">
@@ -144,7 +144,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge badge-sm bg-gradient-{{ $code->status == 'issued' ? 'success' : ($code->status == 'unused' ? 'warning' : 'secondary') }}">
+                                        <span class="badge badge-sm bg-gradient-{{ $code->status == 'available' ? 'success' : ($code->status == 'unused' ? 'warning' : 'secondary') }}">
                                             {{ ucfirst($code->status) }}
                                         </span>
                                     </td>
@@ -174,7 +174,7 @@
                                                 <i class="ni ni-single-copy-04"></i>
                                             </a>
 
-                                            @if($code->status == 'issued')
+                                            @if($code->status == 'available')
                                             <button type="button" class="btn btn-xs btn-primary" title="Issue Code"
                                                     onclick="issueCode('{{ $code->id }}', '{{ $code->code }}')">
                                                 <i class="ni ni-send"></i>

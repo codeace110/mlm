@@ -45,7 +45,7 @@
                                 @forelse($batches as $batch)
                                 @php
                                     $codes = \App\Models\AdminCode::where('batch_id', $batch->batch_id)->get();
-                                    $issued = $codes->where('status', 'issued')->count();
+                                    $available = $codes->where('status', 'available')->count();
                                     $unused = $codes->where('status', 'unused')->count();
                                     $used = $codes->where('status', 'used')->count();
                                 @endphp
@@ -65,7 +65,7 @@
                                         <span class="font-weight-bold">{{ $codes->count() }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge badge-sm bg-success">{{ $issued }}</span>
+                                        <span class="badge badge-sm bg-success">{{ $available }}</span>
                                     </td>
                                     <td>
                                         <span class="badge badge-sm bg-warning">{{ $unused }}</span>

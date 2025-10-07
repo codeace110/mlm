@@ -13,7 +13,7 @@ test('new users can register', function () {
     $adminCode = \App\Models\AdminCode::create([
         'code' => 'TESTADMIN123',
         'distributor_id' => $distributor->id,
-        'status' => 'issued',
+        'status' => 'assigned',
     ]);
 
     $response = $this->post('/register', [

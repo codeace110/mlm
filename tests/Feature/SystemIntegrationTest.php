@@ -46,7 +46,7 @@ class SystemIntegrationTest extends TestCase
         // Create sponsor
         $sponsor = User::factory()->create();
         $sponsorCode = AdminCode::where('code', $codes[0])->first();
-        $sponsorCode->update(['assigned_to' => $sponsor->id, 'status' => 'assigned']);
+        $sponsorCode->update(['distributor_id' => $sponsor->id, 'status' => 'available']);
 
         // Register new user with referral code
         $newUserData = [
@@ -61,7 +61,7 @@ class SystemIntegrationTest extends TestCase
         $response = $this->post(route('register'), $newUserData);
 
         // Assert successful registration
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect('/dashboard');
         $this->assertDatabaseHas('users', [
             'email' => 'newuser@example.com',
             'sponsor_id' => $sponsor->id,
@@ -72,7 +72,7 @@ class SystemIntegrationTest extends TestCase
         $this->assertDatabaseHas('admin_codes', [
             'code' => $codes[0],
             'status' => 'used',
-            'used_by' => User::where('email', 'newuser@example.com')->first()->id,
+            'used_by_user_id' => User::where('email', 'newuser@example.com')->first()->id,
         ]);
 
         // Assert binary tree was created
@@ -118,9 +118,12 @@ class SystemIntegrationTest extends TestCase
             'amount' => 100.00,
         ]);
 
-        // Create spillover users
+        // Create spillover users on both sides
         $spillover1 = User::factory()->create(['sponsor_id' => $sponsor->id]);
         $this->binaryService->placeUser($spillover1, $sponsor, 'left');
+
+        $spillover2 = User::factory()->create(['sponsor_id' => $sponsor->id]);
+        $this->binaryService->placeUser($spillover2, $sponsor, 'right');
 
         // Assert spillover bonus was created
         $this->assertDatabaseHas('bonuses', [

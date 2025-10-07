@@ -103,9 +103,12 @@ class RegisteredUserController extends Controller
             DB::rollBack();
             \Log::error('Registration failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'user_email' => $request->email,
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
             ]);
-            return back()->withErrors(['registration_code' => 'Registration failed. Please try again.'])->withInput();
+            return back()->withErrors(['registration_code' => 'Registration failed. Please try again. Error: ' . $e->getMessage()])->withInput();
         }
     }
 }

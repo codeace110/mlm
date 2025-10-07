@@ -30,7 +30,7 @@ class AdminCodeFactory extends Factory
             'code' => Str::upper(Str::random(8)),
             'tracker' => $this->faker->uuid(),
             'batch_id' => $this->faker->uuid(),
-            'status' => $this->faker->randomElement(['issued', 'unused', 'used']),
+            'status' => $this->faker->randomElement(['available', 'assigned', 'used']),
             'issued_to_user_id' => User::factory(),
             'issued_by_admin_id' => User::factory(),
             'issued_at' => $this->faker->optional(0.7)->dateTime(),
@@ -41,24 +41,24 @@ class AdminCodeFactory extends Factory
     }
 
     /**
-     * Indicate that the admin code is issued.
+     * Indicate that the admin code is assigned.
      */
-    public function issued(): static
+    public function assigned(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'issued',
-            'issued_to_user_id' => null,
+            'status' => 'assigned',
+            'issued_to_user_id' => User::factory(),
             'issued_at' => now(),
         ]);
     }
 
     /**
-     * Indicate that the admin code is unused.
+     * Indicate that the admin code is available.
      */
-    public function unused(): static
+    public function available(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'unused',
+            'status' => 'available',
         ]);
     }
 

@@ -32,7 +32,7 @@
 
                                         <dt class="col-sm-4">Status:</dt>
                                         <dd class="col-sm-8">
-                                            <span class="badge badge-lg bg-gradient-{{ $code->status == 'issued' ? 'success' : ($code->status == 'unused' ? 'warning' : 'secondary') }}">
+                                            <span class="badge badge-lg bg-gradient-{{ $code->status == 'available' ? 'success' : ($code->status == 'unused' ? 'warning' : 'secondary') }}">
                                                 {{ ucfirst($code->status) }}
                                             </span>
                                         </dd>

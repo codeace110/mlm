@@ -11,14 +11,19 @@ class AdminCode extends Model
 
     protected $fillable = [
         'code',
-        'assigned_to',
+        'distributor_id',
         'generated_by',
         'batch_id',
         'batch_name',
         'expires_at',
         'status',
-        'used_by',
+        'used_by_user_id',
         'used_at',
+        'issued_to_user_id',
+        'issued_by_admin_id',
+        'issued_at',
+        'notes',
+        'tracker',
     ];
 
     /**
@@ -43,7 +48,7 @@ class AdminCode extends Model
 
     public function assignedTo()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->belongsTo(User::class, 'distributor_id');
     }
 
     public function generatedBy()
@@ -56,7 +61,22 @@ class AdminCode extends Model
      */
     public function distributor()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->belongsTo(User::class, 'distributor_id');
+    }
+
+    public function issuedTo()
+    {
+        return $this->belongsTo(User::class, 'issued_to_user_id');
+    }
+
+    public function issuedBy()
+    {
+        return $this->belongsTo(User::class, 'issued_by_admin_id');
+    }
+
+    public function usedByUser()
+    {
+        return $this->belongsTo(User::class, 'used_by_user_id');
     }
 
     /**
@@ -74,7 +94,7 @@ class AdminCode extends Model
 
             $code->update([
                 'status' => 'used',
-                'used_by' => $userId,
+                'used_by_user_id' => $userId,
                 'used_at' => now(),
             ]);
 

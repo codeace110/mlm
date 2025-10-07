@@ -55,7 +55,7 @@
                                         <li>All codes will be 8 characters long and unique</li>
                                         <li>Codes are automatically converted to uppercase</li>
                                         <li>Each batch gets a unique UUID for tracking</li>
-                                        <li>Generated codes start as "issued" status</li>
+                                        <li>Generated codes start as "available" status</li>
                                         <li>You can assign codes to distributors after generation</li>
                                     </ul>
                                 </div>

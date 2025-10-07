@@ -69,7 +69,7 @@ class AdminCodeService
                     $adminCode = AdminCode::create([
                         'code' => strtoupper($code), // Store in uppercase for consistency
                         'distributor_id' => $distributor->id,
-                        'status' => 'unused', // Start as unused, will be issued later
+                        'status' => 'available', // Start as available, will be assigned later
                         'batch_id' => $batchId,
                         'batch_name' => $batchName,
                     ]);
@@ -106,7 +106,7 @@ class AdminCodeService
     {
         return DB::transaction(function() use ($code, $distributor) {
             $adminCode = AdminCode::whereRaw('UPPER(code) = ?', [strtoupper($code)])
-                ->where('status', 'unused')
+                ->where('status', 'available')
                 ->lockForUpdate()
                 ->first();
 
@@ -120,7 +120,7 @@ class AdminCodeService
 
             $adminCode->update([
                 'distributor_id' => $distributor->id,
-                'status' => 'issued',
+                'status' => 'assigned',
                 'issued_at' => Carbon::now(),
                 'issued_by_admin_id' => $distributor->id, // Admin issuing the code
             ]);
@@ -146,7 +146,7 @@ class AdminCodeService
         return DB::transaction(function() use ($code, $distributor) {
             $adminCode = AdminCode::whereRaw('UPPER(code) = ?', [strtoupper($code)])
                 ->where('distributor_id', $distributor->id)
-                ->whereIn('status', ['issued', 'unused'])
+                ->whereIn('status', ['available', 'assigned'])
                 ->lockForUpdate()
                 ->first();
 
@@ -169,7 +169,7 @@ class AdminCodeService
 
             $adminCode->update([
                 'distributor_id' => null,
-                'status' => 'unused',
+                'status' => 'available',
                 'issued_at' => null,
                 'issued_by_admin_id' => null,
             ]);
@@ -196,7 +196,7 @@ class AdminCodeService
             // Use case-insensitive code lookup with proper locking
             $adminCode = AdminCode::with('distributor')
                 ->whereRaw('UPPER(code) = ?', [strtoupper($code)])
-                ->whereIn('status', ['issued', 'unused'])
+                ->whereIn('status', ['available', 'assigned'])
                 ->lockForUpdate()
                 ->first();
 
@@ -250,8 +250,8 @@ class AdminCodeService
         return [
             'batch_id' => $batchId,
             'total_codes' => $codes->sum->count,
-            'issued' => $codes->get('issued', collect())->count(),
-            'unused' => $codes->get('unused', collect())->count(),
+            'available' => $codes->get('available', collect())->count(),
+            'assigned' => $codes->get('assigned', collect())->count(),
             'used' => $codes->get('used', collect())->count(),
             'codes' => $codes->toArray(),
         ];
@@ -283,7 +283,7 @@ class AdminCodeService
     public function getAvailableCodes(User $distributor)
     {
         return AdminCode::where('distributor_id', $distributor->id)
-            ->whereIn('status', ['issued', 'unused'])
+            ->whereIn('status', ['available', 'assigned'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -302,8 +302,8 @@ class AdminCodeService
 
         return [
             'total_codes' => $codes->sum->count,
-            'issued' => $codes->get('issued', collect())->count(),
-            'unused' => $codes->get('unused', collect())->count(),
+            'available' => $codes->get('available', collect())->count(),
+            'assigned' => $codes->get('assigned', collect())->count(),
             'used' => $codes->get('used', collect())->count(),
             'used_today' => AdminCode::where('distributor_id', $distributor->id)
                 ->where('status', 'used')
