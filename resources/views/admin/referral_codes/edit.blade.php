@@ -38,7 +38,7 @@
 
                         <div class="mb-3">
                             <label for="expires_at" class="form-label">Expires At (Optional)</label>
-                            <input type="datetime-local" class="form-control" id="expires_at" name="expires_at" value="{{ old('expires_at', $referralCode->expires_at?->format('Y-m-d\TH:i')) }}">
+                            <input type="datetime-local" class="form-control" id="expires_at" name="expires_at" value="{{ old('expires_at', $referralCode->expires_at ? $referralCode->expires_at->format('Y-m-d\TH:i') : '') }}">
                             @error('expires_at')
                                 <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror

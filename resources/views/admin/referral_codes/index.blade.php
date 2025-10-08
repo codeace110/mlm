@@ -4,6 +4,18 @@
 
 @section('content')
 <div class="container-fluid py-4">
+@php
+    $currentUser = auth()->user();
+@endphp
+
+@unless($currentUser && $currentUser->is_admin)
+    <div class="alert alert-danger">
+        <h4>Authentication Required</h4>
+        <p>You must be logged in as an administrator to access this page.</p>
+        <p>Current user: {{ $currentUser ? $currentUser->name . ' (' . ($currentUser->is_admin ? 'Admin' : 'Not Admin') . ')' : 'Not logged in' }}</p>
+        <a href="{{ route('login') }}" class="btn btn-primary">Login as Admin</a>
+    </div>
+@else
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
@@ -92,14 +104,13 @@
                         <div>
                             <h5 class="mb-0">Referral Codes Management</h5>
                             <p class="text-sm mb-0">
-                                Generate and track UUID-based referral codes (AKEN + 15 characters) - 50 codes per batch
+                                Generate and track UUID-based referral codes (AKEN + 15 characters) - Custom quantity (1-50 codes)
                             </p>
                         </div>
                         <div class="ms-auto my-auto mt-lg-0 mt-4">
                              <div class="ms-auto my-auto">
-                                 <button type="button" id="generate-codes-btn" class="btn btn-primary btn-sm">
-                                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                     Generate 50 Codes
+                                 <button type="button" id="generate-codes-btn" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#generateCodesModal">
+                                     <i class="fas fa-plus me-1"></i>Generate Codes
                                  </button>
                              </div>
                          </div>
@@ -205,51 +216,6 @@
 
 <script>
 $(document).ready(function() {
-    $('#generate-codes-btn').on('click', function() {
-        const $btn = $(this);
-        const $spinner = $btn.find('.spinner-border');
-
-        // Show loading state
-        $btn.prop('disabled', true);
-        $spinner.removeClass('d-none');
-
-        // Send AJAX request
-        $.ajax({
-            url: '{{ route("admin.referral_codes.generate") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Update statistics
-                    updateStatistics(response.stats);
-
-                    // Show success message with UUID format info
-                    showNotification('Successfully generated 50 UUID-based referral codes (AKEN + 15 characters)', 'success');
-
-                    // Refresh the page to show new codes
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showNotification(response.message, 'danger');
-                }
-            },
-            error: function(xhr) {
-                let message = 'An error occurred while generating codes.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                }
-                showNotification(message, 'danger');
-            },
-            complete: function() {
-                // Hide loading state
-                $btn.prop('disabled', false);
-                $spinner.addClass('d-none');
-            }
-        });
-    });
 
     function updateStatistics(stats) {
         $('#total-codes').text(stats.total);
@@ -558,5 +524,151 @@ $(document).ready(function() {
         });
     });
 });
+
+    // Generate Codes Modal
+    $('#generate-codes-btn').on('click', function() {
+        // Reset modal form
+        $('#generate-quantity').val(10);
+        $('#generate-expiry').val(30);
+        $('#generate-batch-name').val('');
+
+        $('#generateCodesModal').modal('show');
+    });
+
+    $('#confirm-generate-codes').on('click', function() {
+        const quantity = $('#generate-quantity').val();
+        const expiryDays = $('#generate-expiry').val();
+        const batchName = $('#generate-batch-name').val() || 'Custom Batch';
+
+        console.log('=== GENERATE BUTTON CLICKED ===');
+        console.log('Quantity:', quantity);
+        console.log('Expiry Days:', expiryDays);
+        console.log('Batch Name:', batchName);
+        console.log('CSRF Token:', $('meta[name="csrf-token"]').attr('content') || 'Not found');
+
+        if (!quantity || quantity < 1 || quantity > 50) {
+            console.log('Validation failed: quantity issue');
+            showNotification('Please enter a quantity between 1 and 50.', 'warning');
+            return;
+        }
+
+        const $btn = $(this);
+        const $spinner = $btn.find('.spinner-border');
+
+        console.log('Starting AJAX request...');
+        $btn.prop('disabled', true);
+        $spinner.removeClass('d-none');
+
+        // Show what we're sending
+        const requestData = {
+            _token: '{{ csrf_token() }}',
+            quantity: quantity,
+            expiry_days: expiryDays,
+            batch_name: batchName
+        };
+        console.log('Request data:', requestData);
+
+        $.ajax({
+            url: '{{ route("admin.referral_codes.generate") }}',
+            method: 'POST',
+            data: requestData,
+            beforeSend: function(xhr) {
+                console.log('Before send - URL:', this.url);
+                console.log('Before send - Method:', this.method);
+                console.log('Before send - Headers:', xhr.getAllResponseHeaders());
+            },
+            success: function(response) {
+                console.log('✅ AJAX SUCCESS!');
+                console.log('Response:', response);
+                if (response.success) {
+                    showNotification(`Successfully generated ${quantity} UUID-based referral codes!`, 'success');
+                    $('#generateCodesModal').modal('hide');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showNotification(response.message || 'Unknown error', 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('❌ AJAX ERROR!');
+                console.log('Status:', status);
+                console.log('Error:', error);
+                console.log('Response status:', xhr.status);
+                console.log('Response text:', xhr.responseText);
+
+                if (xhr.responseJSON) {
+                    console.log('Response JSON:', xhr.responseJSON);
+                }
+
+                let message = 'An error occurred while generating codes.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                } else if (xhr.status === 419) {
+                    message = 'Session expired. Please refresh the page and try again.';
+                } else if (xhr.status === 403) {
+                    message = 'You do not have permission to perform this action.';
+                } else if (xhr.status === 422) {
+                    message = 'Validation error. Please check your input.';
+                } else if (xhr.status === 500) {
+                    message = 'Server error. Please try again later.';
+                }
+
+                console.log('Final error message:', message);
+                showNotification(message, 'danger');
+            },
+            complete: function(xhr, status) {
+                console.log('=== AJAX REQUEST COMPLETED ===');
+                console.log('Status:', status);
+                console.log('Response status:', xhr.status);
+                $btn.prop('disabled', false);
+                $spinner.addClass('d-none');
+            }
+        });
+    });
 </script>
+
+<!-- Generate Codes Modal -->
+<div class="modal fade" id="generateCodesModal" tabindex="-1" aria-labelledby="generateCodesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="generateCodesModalLabel">Generate Referral Codes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="generate-quantity" class="form-label">Quantity</label>
+                    <input type="number" class="form-control" id="generate-quantity" min="1" max="50" value="10" required>
+                    <div class="form-text">Enter number of codes to generate (1-50)</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="generate-expiry" class="form-label">Expiry Days (Optional)</label>
+                    <input type="number" class="form-control" id="generate-expiry" min="1" max="365" value="30">
+                    <div class="form-text">Codes expire after specified days (leave empty for no expiry)</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="generate-batch-name" class="form-label">Batch Name (Optional)</label>
+                    <input type="text" class="form-control" id="generate-batch-name" maxlength="100">
+                    <div class="form-text">Custom name for this batch of codes</div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Code Format:</strong> AKEN + 15 characters (19 characters total)<br>
+                    <strong>Example:</strong> AKEN3DB6A0EAEEDC478
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-generate-codes">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    Generate Codes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+@endunless

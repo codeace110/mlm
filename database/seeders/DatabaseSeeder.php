@@ -150,20 +150,11 @@ class DatabaseSeeder extends Seeder
             'right_spillover' => 0,
         ]);
 
-        // Generate and assign UUID-based referral codes to the distributor
+        // Generate UUID-based referral codes (available for admin to assign)
         $uuidService = new \App\Services\EnhancedReferralCodeService();
         $uuidCodes = $uuidService->generateBatch($admin, 5, 'Initial UUID Batch', 30);
 
-        // Assign UUID codes to the sample distributor
-        foreach ($uuidCodes as $code) {
-            $adminCode = AdminCode::where('code', $code)->first();
-            if ($adminCode) {
-                $adminCode->update([
-                    'distributor_id' => $distributor->id,
-                    'status' => 'assigned',
-                ]);
-            }
-        }
+        // Codes remain available (status: available) for admin to assign to distributors
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Admin login: admin@mlm.com / admin123');

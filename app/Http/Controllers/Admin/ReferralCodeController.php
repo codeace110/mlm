@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdminCode;
 use App\Services\EnhancedReferralCodeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ReferralCodeController extends Controller
 {
@@ -29,20 +30,58 @@ class ReferralCodeController extends Controller
 
     public function generate(Request $request)
     {
+        // Debug logging
+        Log::info('Generate codes request received', [
+            'user_id' => auth()->id(),
+            'is_admin' => auth()->user()->is_admin ?? false,
+            'request_data' => $request->all()
+        ]);
+
+        $request->validate([
+            'quantity' => 'required|integer|min:1|max:50',
+            'expiry_days' => 'nullable|integer|min:1|max:365',
+            'batch_name' => 'nullable|string|max:100'
+        ]);
+
         try {
-            $codes = $this->referralCodeService->generateBatch(auth()->user(), 50, 'Admin Generated Batch', 30);
+            $quantity = $request->quantity;
+            $expiryDays = $request->expiry_days;
+            $batchName = $request->batch_name ?: 'Custom Batch ' . date('Y-m-d H:i:s');
+
+            Log::info('Generating codes', [
+                'quantity' => $quantity,
+                'expiry_days' => $expiryDays,
+                'batch_name' => $batchName
+            ]);
+
+            $codes = $this->referralCodeService->generateBatch(
+                auth()->user(),
+                $quantity,
+                $batchName,
+                $expiryDays
+            );
+
+            $message = "{$quantity} UUID-based referral codes (AKEN + 15 characters) generated successfully.";
+
+            Log::info('Codes generated successfully', ['count' => count($codes)]);
 
             if ($request->ajax()) {
                 $stats = $this->referralCodeService->getCodeStatistics();
                 return response()->json([
                     'success' => true,
-                    'message' => '50 UUID-based referral codes (AKEN + 15 characters) generated successfully.',
+                    'message' => $message,
                     'stats' => $stats
                 ]);
             }
 
-            return back()->with('success', '50 UUID-based referral codes (AKEN + 15 characters) generated successfully.');
+            return back()->with('success', $message);
         } catch (\Exception $e) {
+            Log::error('Error generating codes', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -107,7 +146,7 @@ class ReferralCodeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Referral code assigned successfully.',
-                'code' => $referralCode->fresh(['assignedTo'])
+                'code' => $referralCode->fresh()
             ]);
         }
 
@@ -171,7 +210,7 @@ class ReferralCodeController extends Controller
                 fputcsv($file, [
                     $code->code,
                     $code->status,
-                    $code->assignedTo && $code->assignedTo->name ? $code->assignedTo->name : 'N/A',
+                    $code->assignedTo ? $code->assignedTo->name : 'N/A',
                     $code->generatedBy ? $code->generatedBy->name : 'N/A',
                     $code->batch_id ?: 'N/A',
                     $code->created_at->format('Y-m-d H:i:s'),

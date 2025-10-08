@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class AdminCode extends Model
 {
@@ -27,6 +28,23 @@ class AdminCode extends Model
     ];
 
     /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'code';
+    }
+
+    /**
+     * Override route key for model binding to handle the referral_code parameter
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        // Handle the {referral_code} route parameter
+        return self::where('code', strtoupper($value))->first();
+    }
+
+    /**
      * Boot the model and add global scope for case-insensitive code uniqueness
      */
     protected static function boot()
@@ -40,6 +58,7 @@ class AdminCode extends Model
             }
         });
     }
+
 
     protected $casts = [
         'expires_at' => 'datetime',
@@ -84,7 +103,7 @@ class AdminCode extends Model
      */
     public function markAsUsed(string $userId, $callback = null)
     {
-        return \DB::transaction(function () use ($userId, $callback) {
+        return DB::transaction(function () use ($userId, $callback) {
             // Lock the record for update to prevent race conditions
             $code = self::lockForUpdate()->find($this->id);
 
@@ -176,6 +195,7 @@ class AdminCode extends Model
         $upperCode = strtoupper($code);
         return self::where('code', $upperCode)->first();
     }
+
 
     /**
      * Generate a unique admin code
