@@ -92,19 +92,15 @@
                         <div>
                             <h5 class="mb-0">Referral Codes Management</h5>
                             <p class="text-sm mb-0">
-                                Generate and track referral codes (50 codes per batch)
+                                Generate and track UUID-based referral codes (AKEN + 15 characters) - 50 codes per batch
                             </p>
                         </div>
                         <div class="ms-auto my-auto mt-lg-0 mt-4">
                              <div class="ms-auto my-auto">
-                                 @if($stats['available'] == 0 && $stats['assigned'] == 0)
                                  <button type="button" id="generate-codes-btn" class="btn btn-primary btn-sm">
                                      <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                      Generate 50 Codes
                                  </button>
-                                 @else
-                                 <span class="text-muted">Cannot generate new codes until all current codes are used</span>
-                                 @endif
                              </div>
                          </div>
                     </div>
@@ -156,7 +152,8 @@
                                     <td>
                                         <div class="d-flex px-2">
                                             <div class="my-auto">
-                                                <h6 class="mb-0 text-sm">{{ $code->code }}</h6>
+                                                <h6 class="mb-0 text-sm font-monospace">{{ $code->code }}</h6>
+                                                <small class="text-muted">{{ strlen($code->code) }} characters</small>
                                             </div>
                                         </div>
                                     </td>
@@ -166,15 +163,15 @@
                                         </span>
                                     </td>
                                     <td>
-                                        @if($code->used_by)
-                                            {{ \App\Models\User::find($code->used_by)->name ?? 'User Not Found' }}
+                                        @if($code->used_by_user_id)
+                                            {{ \App\Models\User::find($code->used_by_user_id)->name ?? 'User Not Found' }}
                                         @else
                                             Not Used
                                         @endif
                                     </td>
                                     <td>
-                                        @if($code->assigned_to)
-                                            {{ \App\Models\User::find($code->assigned_to)->name ?? 'User Not Found' }}
+                                        @if($code->distributor_id)
+                                            {{ \App\Models\User::find($code->distributor_id)->name ?? 'User Not Found' }}
                                         @else
                                             N/A
                                         @endif
@@ -228,8 +225,8 @@ $(document).ready(function() {
                     // Update statistics
                     updateStatistics(response.stats);
 
-                    // Show success message
-                    showNotification(response.message, 'success');
+                    // Show success message with UUID format info
+                    showNotification('Successfully generated 50 UUID-based referral codes (AKEN + 15 characters)', 'success');
 
                     // Refresh the page to show new codes
                     setTimeout(function() {

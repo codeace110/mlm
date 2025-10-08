@@ -36,12 +36,12 @@ class ReferralCodeController extends Controller
                 $stats = $this->referralCodeService->getCodeStatistics();
                 return response()->json([
                     'success' => true,
-                    'message' => '50 referral codes generated successfully.',
+                    'message' => '50 UUID-based referral codes (AKEN + 15 characters) generated successfully.',
                     'stats' => $stats
                 ]);
             }
 
-            return back()->with('success', '50 referral codes generated successfully.');
+            return back()->with('success', '50 UUID-based referral codes (AKEN + 15 characters) generated successfully.');
         } catch (\Exception $e) {
             if ($request->ajax()) {
                 return response()->json([
@@ -171,7 +171,7 @@ class ReferralCodeController extends Controller
                 fputcsv($file, [
                     $code->code,
                     $code->status,
-                    $code->assignedTo ? $code->assignedTo->name : 'N/A',
+                    $code->assignedTo && $code->assignedTo->name ? $code->assignedTo->name : 'N/A',
                     $code->generatedBy ? $code->generatedBy->name : 'N/A',
                     $code->batch_id ?: 'N/A',
                     $code->created_at->format('Y-m-d H:i:s'),

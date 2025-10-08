@@ -266,18 +266,13 @@ class EnhancedReferralCodeService
     }
 
     /**
-     * Generate unique code
+     * Generate unique UUID-based referral code (AKEN + 15 random characters)
      */
     private function generateUniqueCode(): string
     {
-        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        $code = '';
-
-        for ($i = 0; $i < 8; $i++) {
-            $code .= $characters[rand(0, strlen($characters) - 1)];
-        }
-
-        return $code;
+        $length = 15;
+        $randomPart = strtoupper(substr(bin2hex(random_bytes($length)), 0, $length));
+        return 'AKEN' . $randomPart;
     }
 
     /**

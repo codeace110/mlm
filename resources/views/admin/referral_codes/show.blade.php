@@ -13,7 +13,8 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Code:</strong> {{ $code->code }}</p>
+                            <p><strong>Code:</strong> <span class="font-monospace">{{ $code->code }}</span></p>
+                            <p><strong>Format:</strong> UUID-based ({{ strlen($code->code) }} characters)</p>
                             <p><strong>Status:</strong>
                                 <span class="badge bg-{{ $code->status === 'used' ? 'success' : ($code->status === 'expired' ? 'danger' : 'warning') }}">
                                     {{ ucfirst($code->status) }}
@@ -29,15 +30,15 @@
                         </div>
                         <div class="col-md-6">
                             <p><strong>Assigned To:</strong>
-                                @if($code->assigned_to)
-                                    {{ \App\Models\User::find($code->assigned_to)->name ?? 'User Not Found' }}
+                                @if($code->distributor_id)
+                                    {{ \App\Models\User::find($code->distributor_id)->name ?? 'User Not Found' }}
                                 @else
                                     N/A
                                 @endif
                             </p>
                             <p><strong>Used By:</strong>
-                                @if($code->used_by)
-                                    {{ \App\Models\User::find($code->used_by)->name ?? 'User Not Found' }}
+                                @if($code->used_by_user_id)
+                                    {{ \App\Models\User::find($code->used_by_user_id)->name ?? 'User Not Found' }}
                                 @else
                                     N/A
                                 @endif

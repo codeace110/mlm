@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use App\Services\BinaryBalancerService;
@@ -38,7 +39,16 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
-            'registration_code' => 'required|string',
+            'registration_code' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Accept both UUID format (AKEN + 15 chars) and admin codes (8 chars)
+                    if (!preg_match('/^AKEN[A-F0-9]{15}$/i', $value) && strlen($value) != 8) {
+                        $fail('The referral code must be a valid UUID (AKEN + 15 characters) or an 8-character admin code.');
+                    }
+                },
+            ],
             'preferred_side' => 'nullable|in:left,right',
         ]);
 
@@ -55,11 +65,24 @@ class RegisteredUserController extends Controller
 
             // Use EnhancedReferralCodeService to validate and use the code
             $referralCodeService = new EnhancedReferralCodeService();
-            $sponsor = $referralCodeService->validateAndUseCode($request->registration_code, $user);
 
-            if (!$sponsor) {
-                $user->delete(); // Clean up user if code validation fails
-                return back()->withErrors(['registration_code' => 'Invalid or expired registration code. Please contact your sponsor for a valid code.'])->withInput();
+            // Check if it's a UUID-based code (AKEN + 15 chars) or a regular admin code
+            if (preg_match('/^AKEN[A-F0-9]{15}$/i', $request->registration_code)) {
+                // It's a UUID-based code, find the distributor who owns this code
+                $distributor = User::where('referral_code', $request->registration_code)->first();
+                if (!$distributor) {
+                    $user->delete();
+                    return back()->withErrors(['registration_code' => 'Invalid referral code. Please contact your sponsor for a valid code.'])->withInput();
+                }
+                $sponsor = $distributor;
+            } else {
+                // It's a regular admin code, use the existing service
+                $sponsor = $referralCodeService->validateAndUseCode($request->registration_code, $user);
+
+                if (!$sponsor) {
+                    $user->delete(); // Clean up user if code validation fails
+                    return back()->withErrors(['registration_code' => 'Invalid or expired registration code. Please contact your sponsor for a valid code.'])->withInput();
+                }
             }
 
             // Update user with sponsor information and preferred side
@@ -101,7 +124,7 @@ class RegisteredUserController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Registration failed', [
+            Log::error('Registration failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'user_email' => $request->email,

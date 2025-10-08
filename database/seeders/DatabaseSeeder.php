@@ -121,23 +121,6 @@ class DatabaseSeeder extends Seeder
             BonusRule::create($rule);
         }
 
-        // Create initial admin codes for distributors
-        $adminCodes = [
-            'ADMIN001',
-            'ADMIN002',
-            'ADMIN003',
-            'ADMIN004',
-            'ADMIN005',
-        ];
-
-        foreach ($adminCodes as $code) {
-            AdminCode::create([
-                'code' => $code,
-                'distributor_id' => $admin->id,
-                'status' => 'assigned',
-            ]);
-        }
-
         // Create a sample distributor user
         $distributor = User::create([
             'name' => 'Sample Distributor',
@@ -167,13 +150,19 @@ class DatabaseSeeder extends Seeder
             'right_spillover' => 0,
         ]);
 
-        // Assign one admin code to the distributor
-        $adminCode = AdminCode::where('code', 'ADMIN001')->first();
-        if ($adminCode) {
-            $adminCode->update([
-                'distributor_id' => $distributor->id,
-                'status' => 'assigned',
-            ]);
+        // Generate and assign UUID-based referral codes to the distributor
+        $uuidService = new \App\Services\EnhancedReferralCodeService();
+        $uuidCodes = $uuidService->generateBatch($admin, 5, 'Initial UUID Batch', 30);
+
+        // Assign UUID codes to the sample distributor
+        foreach ($uuidCodes as $code) {
+            $adminCode = AdminCode::where('code', $code)->first();
+            if ($adminCode) {
+                $adminCode->update([
+                    'distributor_id' => $distributor->id,
+                    'status' => 'assigned',
+                ]);
+            }
         }
 
         $this->command->info('Database seeded successfully!');

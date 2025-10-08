@@ -317,7 +317,17 @@ class User extends Authenticatable
 
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = 'AKEN' . strtoupper(substr(bin2hex(random_bytes(6)), 0, 6));
+                $model->{$model->getKeyName()} = 'AKEN' . strtoupper(substr(bin2hex(random_bytes(15)), 0, 15));
+            }
+
+            // Also generate a referral code for the user if not provided
+            if (empty($model->referral_code)) {
+                $model->referral_code = 'AKEN' . strtoupper(substr(bin2hex(random_bytes(15)), 0, 15));
+            }
+
+            // Generate a unique registration code for the user (different from their referral code)
+            if (empty($model->registration_code)) {
+                $model->registration_code = 'AKEN' . strtoupper(substr(bin2hex(random_bytes(15)), 0, 15));
             }
         });
     }

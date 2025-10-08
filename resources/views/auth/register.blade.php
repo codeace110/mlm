@@ -42,14 +42,16 @@
 
        <!-- Registration Code (required) -->
        <div class="mt-4">
-           <x-input-label for="registration_code" :value="__('Registration Code')" />
+           <x-input-label for="registration_code" :value="__('Referral Code')" />
+           <small class="text-gray-600">Enter the referral code provided by your sponsor (Format: AKEN + 15 characters)</small>
 
            <x-text-input id="registration_code" class="block mt-1 w-full"
                            type="text"
                            name="registration_code"
                            :value="old('registration_code')"
                            required
-                           autocomplete="registration_code" />
+                           autocomplete="registration_code"
+                           placeholder="AKEN1A2B3C4D5E6F7G8H9I" />
 
            <x-input-error :messages="$errors->get('registration_code')" class="mt-2" />
        </div>
